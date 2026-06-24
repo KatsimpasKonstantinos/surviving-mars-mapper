@@ -8,6 +8,10 @@ interface FinderProps {
 }
 
 function Finder({ coordString, setCoordString, mapData }: FinderProps) {
+    console.log(coordString);
+    console.log(setCoordString);
+    console.log(mapData);
+
     return (
         <PageWrapper>
             <div className="Finder">
