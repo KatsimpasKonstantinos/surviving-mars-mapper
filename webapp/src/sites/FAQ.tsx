@@ -16,7 +16,7 @@ function FAQ() {
                 <p>If you want a similar app for Surviving Mars check out <a href="https://kingdarboja.github.io/surviving-mars-stats/vanilla">this site</a></p>
 
                 <h2>How do I report a bug, ask for a feature or contribute?</h2>
-                <p>Check out the <a href="">Github</a>.</p>
+                <p>Check out the <a href="https://github.com/KatsimpasKonstantinos/surviving-mars-mapper">Github</a>.</p>
             </div>
         </PageWrapper>
     )

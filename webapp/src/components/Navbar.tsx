@@ -81,7 +81,7 @@ function Navbar() {
                     </a>
 
                     <a
-                        href="https://github.com/your-username/your-repo"
+                        href="https://github.com/KatsimpasKonstantinos/surviving-mars-mapper"
                         className="github-icon"
                         target="_blank"
                         rel="noopener noreferrer"
