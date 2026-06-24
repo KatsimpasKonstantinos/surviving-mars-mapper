@@ -1,0 +1,59 @@
+:root {
+  --color-text: rgb(241, 245, 249);
+  --color-bg: rgb(9, 11, 15);
+  --color-primary: rgb(220, 38, 38);
+  --color-secondary: rgb(31, 116, 180);
+  --color-accent: rgb(255, 255, 0);
+  --color-shadow: rgba(0, 0, 0, 0.5);
+  --color-text-secondary: rgb(146, 154, 161);
+
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+
+  font: 18px/145% var(--sans);
+  letter-spacing: 0.18px;
+  color-scheme: light dark;
+  color: var(--color-text);
+  background: var(--color-bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  --transition-duration: 0.2s;
+  --transition-timing: ease;
+
+  transition: background-color var(--transition-duration) var(--transition-timing), color var(--transition-duration) var(--transition-timing), border-color var(--transition-duration) var(--transition-timing);
+
+
+  @media (max-width: 1024px) {
+    font-size: 16px;
+  }
+}
+
+.light {
+  --color-text: rgb(15, 23, 42);
+  --color-bg: rgb(248, 250, 252);
+  --color-shadow: rgba(100, 116, 139, 0.15);
+  --color-text-secondary: rgb(94, 96, 100);
+}
+
+#root {
+  margin: 0 auto;
+  text-align: center;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  align-items: center;
+}
+
+body {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}

@@ -1,0 +1,101 @@
+.Clipboard-btn {
+    background: none;
+    border: none;
+    padding: 4px;
+    margin-left: 6px;
+    cursor: pointer;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    vertical-align: middle;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.Clipboard-btn:hover {
+    color: #374151; 
+    transform: scale(1.15) rotate(5deg); 
+}
+
+.Clipboard-btn:active {
+    transform: scale(0.9);
+}
+
+.icon-container {
+    position: relative;
+}
+
+.icon-copy, .icon-check {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); 
+    transform-origin: center;
+}
+
+.icon-copy {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+}
+.icon-check {
+    opacity: 0;
+    transform: scale(0.5) rotate(-45deg);
+    color: #0ab970;
+}
+
+.Clipboard-btn.copied {
+    pointer-events: none; 
+}
+
+.Clipboard-btn.copied .icon-copy {
+    opacity: 0;
+    transform: scale(0.5) rotate(45deg);
+}
+
+.Clipboard-btn.copied .icon-check {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+}
+
+.Clipboard-btn.copied .icon-check path {
+    stroke-dasharray: 30;
+    stroke-dashoffset: 30;
+    animation: drawCheck 0.4s ease-out forwards;
+    animation-delay: 0.1s;
+}
+
+@keyframes drawCheck {
+    to { stroke-dashoffset: 0; }
+}
+
+.glitter-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    opacity: 0;
+}
+
+.particle-1 { background: var(--color-primary); animation: pop 0.6s ease-out forwards; --tx: -20px; --ty: -20px; }
+.particle-2 { background: var(--color-secondary); animation: pop 0.6s ease-out forwards; --tx: 0px; --ty: -25px; }
+.particle-3 { background: var(--color-accent); animation: pop 0.6s ease-out forwards; --tx: 20px; --ty: -20px; }
+.particle-4 { background: var(--color-primary); animation: pop 0.6s ease-out forwards; --tx: -20px; --ty: 20px; }
+.particle-5 { background: var(--color-secondary); animation: pop 0.6s ease-out forwards; --tx: 0px; --ty: 25px; }
+.particle-6 { background: var(--color-accent); animation: pop 0.6s ease-out forwards; --tx: 20px; --ty: 20px; }
+
+@keyframes pop {
+    0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+    40% { opacity: 1; }
+    100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1.5); opacity: 0; }
+}

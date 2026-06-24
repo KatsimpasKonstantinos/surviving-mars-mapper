@@ -1,0 +1,35 @@
+.Faq {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0px 20px;
+    line-height: 1.5;
+    text-align: left;
+}
+
+.Faq h1 {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--color-primary);
+    padding-bottom: 10px;
+}
+
+.Faq h2 {
+    font-size: 1.5rem;
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.Faq h3 {
+    font-size: 1.25rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.Faq p {
+    margin-bottom: 1.2rem;
+}
+
+.Faq a {
+    color: var(--color-primary);
+
+}
