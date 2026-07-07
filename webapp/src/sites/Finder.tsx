@@ -30,6 +30,8 @@ const parseNumber = (val: string | number | undefined) => {
 
 function Finder({ coordString, setCoordString, mapData }: FinderProps) {
 
+  console.log(coordString);
+
   const rowData = useMemo<FinderRowData[]>(() => {
     return Object.entries(mapData).map(([coord, data]) => ({
       Coordinate: coord,
