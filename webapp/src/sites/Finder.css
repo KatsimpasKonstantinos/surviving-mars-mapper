@@ -1,14 +1,11 @@
 .Finder {
     height: 75vh;
     width: 100%;
-
     margin-top: 20px;
-
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-
 }
 
 .Finder .container {
@@ -16,26 +13,20 @@
     width: 90%;
 }
 
-
 .ag-theme-alpine-dark {
     --ag-background-color: var(--color-bg, #1e1e1e);
     --ag-even-row-background-color: var(--color-bg, #1e1e1e);
     --ag-odd-row-background-color: var(--color-bg-alt, var(--color-bg, #252525));
-
     --ag-header-background-color: var(--color-bg, #111111);
     --ag-header-foreground-color: var(--color-text, #ffffff);
     --ag-header-column-separator-display: none;
-
-
     --ag-data-color: var(--color-text, #dddddd);
-
     --ag-selected-row-background-color: var(--color-secondary, rgba(128, 128, 128, 0.25));
-
+    --ag-row-hover-color: rgba(var(--color-secondary-rgb), 0.1);
     --ag-menu-background-color: var(--color-bg, #1e1e1e);
     --ag-control-panel-background-color: var(--color-bg, #1e1e1e);
     --ag-foreground-color: var(--color-text, #ffffff);
 }
-
 
 .ag-theme-alpine-dark ::-webkit-scrollbar-track {
     background: var(--color-bg);
@@ -50,9 +41,37 @@
 .Finder .show-map-btn {
     text-decoration: none;
     font-weight: bold;
+    color: var(--color-text);
 }
 
 .Finder .show-map-btn:hover {
     color: var(--color-secondary);
+}
 
+.map-id-cell {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.map-preview-popup {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 2px solid var( #666);
+    z-index: 1000;
+    width: 200px;
+}
+
+.map-id-cell:hover .map-preview-popup {
+    display: block;
+}
+
+.map-preview-popup img {
+    width: 100%;
+    height: auto;
+    display: block;
 }

@@ -3,6 +3,7 @@ import { AgGridReact } from 'ag-grid-react';
 import { Link } from 'react-router-dom';
 import type { ColDef, ColGroupDef, RowClickedEvent, ValueGetterParams, ICellRendererParams } from 'ag-grid-community';
 import { ModuleRegistry, AllCommunityModule, ValidationModule } from 'ag-grid-community';
+import { getMapImageSrc } from '../components/App/MapPreview';
 
 ModuleRegistry.registerModules([AllCommunityModule, ValidationModule]);
 
@@ -28,8 +29,6 @@ const parseNumber = (val: string | number | undefined) => {
 };
 
 function Finder({ coordString, setCoordString, mapData }: FinderProps) {
-
-  console.log(coordString);
 
   const rowData = useMemo<FinderRowData[]>(() => {
     return Object.entries(mapData).map(([coord, data]) => ({
@@ -70,18 +69,16 @@ function Finder({ coordString, setCoordString, mapData }: FinderProps) {
         </div>
       )
     },
-    { field: 'SiteName', headerName: 'Site Name', minWidth: 130 },
+    { field: 'SiteName', headerName: 'Site Name', flex: 2, minWidth: 130 },
     { field: 'Difficulty', headerName: 'Difficulty' },
-
     {
       headerName: 'Environment',
       children: [
-        { field: 'Topography', },
+        { field: 'Topography' },
         { field: 'Temperature', headerName: 'Temp (°C)', columnGroupShow: 'open' },
         { field: 'Altitude', headerName: 'Altitude (m)', columnGroupShow: 'open' },
       ]
     },
-
     {
       headerName: 'Threats',
       children: [
@@ -103,7 +100,6 @@ function Finder({ coordString, setCoordString, mapData }: FinderProps) {
         { field: 'ColdWaveBars', headerName: 'Cold Waves', columnGroupShow: 'open' },
       ]
     },
-
     {
       headerName: 'Resources',
       children: [
@@ -123,8 +119,22 @@ function Finder({ coordString, setCoordString, mapData }: FinderProps) {
         { field: 'WaterBars', headerName: 'Water', columnGroupShow: 'open' },
       ]
     },
-
-    { field: 'MapTemplateID', headerName: 'Map ID', minWidth: 200 }
+    {
+      field: 'MapTemplateID',
+      headerName: 'Map ID',
+      minWidth: 200,
+      cellStyle: { overflow: 'visible' },
+      cellRenderer: (params: ICellRendererParams<FinderRowData>) => (
+        <div className="map-id-cell">
+          <span>{params.value}</span>
+          {params.value && (
+            <div className="map-preview-popup">
+              <img src={getMapImageSrc(params.value)} alt="Map preview" />
+            </div>
+          )}
+        </div>
+      )
+    }
   ], [setCoordString]);
 
   const handleRowClicked = (event: RowClickedEvent<FinderRowData>) => {
@@ -151,7 +161,6 @@ function Finder({ coordString, setCoordString, mapData }: FinderProps) {
         />
       </div>
     </div>
-
   );
 }
 
