@@ -72,7 +72,6 @@
     color: var(--color-text-secondary);
 }
 
-.Home .stats-grid .value {}
 
 .Home .analysis-section {
     display: grid;
