@@ -157,7 +157,7 @@
     border-left: 3px solid var(--color-secondary);
 }
 
-@media (max-width: 1000px) {
+@media (max-width: 1200px) {
     .Home .main-container {
         flex-direction: column;
         padding: 20px;

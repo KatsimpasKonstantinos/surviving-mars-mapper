@@ -10,7 +10,11 @@ function Navbar() {
     });
 
     const [downloadPopupVisible, setDownloadPopupVisible] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    
     const dropdownRef = useRef<HTMLDivElement | null>(null);
+    // 1. Create a new ref for the entire navbar
+    const navRef = useRef<HTMLElement | null>(null); 
 
     useEffect(() => {
         document.documentElement.classList.toggle("light", isLightMode);
@@ -19,8 +23,14 @@ function Navbar() {
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
+            // Close the download popup if clicking outside of it
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setDownloadPopupVisible(false);
+            }
+            
+            // 2. Close the mobile menu if clicking outside the entire navbar
+            if (navRef.current && !navRef.current.contains(event.target as Node)) {
+                setIsMobileMenuOpen(false);
             }
         };
 
@@ -28,19 +38,35 @@ function Navbar() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    const closeMobileMenu = () => setIsMobileMenuOpen(false);
+
     return (
         <header className="navbar-wrapper">
-            <nav className="navbar">
-                <Link to="/" className="navbar-logo">
-                    <h1>Surviving Mars Mapper</h1>
-                </Link>
+            {/* 3. Attach the ref to the nav element */}
+            <nav className="navbar" ref={navRef}>
+                <div className="navbar-header">
+                    <Link to="/" className="navbar-logo" onClick={closeMobileMenu}>
+                        <h1>Surviving Mars Mapper</h1>
+                    </Link>
 
-                <div className="right-section">
-                    
+                    <button 
+                        className="hamburger-btn" 
+                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                        aria-label="Toggle navigation menu"
+                        aria-expanded={isMobileMenuOpen}
+                    >
+                        <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
+                            <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div className={`right-section ${isMobileMenuOpen ? 'open' : ''}`}>
                     <NavLink 
                         to="/" 
                         className={({ isActive }) => `nav-button ${isActive ? 'active' : ''}`}
                         end
+                        onClick={closeMobileMenu}
                     >
                         Map
                     </NavLink>
@@ -48,6 +74,7 @@ function Navbar() {
                     <NavLink 
                         to="/finder" 
                         className={({ isActive }) => `nav-button ${isActive ? 'active' : ''}`}
+                        onClick={closeMobileMenu}
                     >
                         Finder
                     </NavLink>
@@ -55,6 +82,7 @@ function Navbar() {
                     <NavLink 
                         to="/faq" 
                         className={({ isActive }) => `nav-button ${isActive ? 'active' : ''}`}
+                        onClick={closeMobileMenu}
                     >
                         FAQ
                     </NavLink>
@@ -76,6 +104,7 @@ function Navbar() {
                         href="https://konsti.zip/"
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={closeMobileMenu}
                     >
                         Other Projects
                     </a>

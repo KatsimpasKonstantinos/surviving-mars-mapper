@@ -1,1 +1,58 @@
-.Finder {}
+.Finder {
+    height: 75vh;
+    width: 100%;
+
+    margin-top: 20px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+}
+
+.Finder .container {
+    height: 100%;
+    width: 90%;
+}
+
+
+.ag-theme-alpine-dark {
+    --ag-background-color: var(--color-bg, #1e1e1e);
+    --ag-even-row-background-color: var(--color-bg, #1e1e1e);
+    --ag-odd-row-background-color: var(--color-bg-alt, var(--color-bg, #252525));
+
+    --ag-header-background-color: var(--color-bg, #111111);
+    --ag-header-foreground-color: var(--color-text, #ffffff);
+    --ag-header-column-separator-display: none;
+
+
+    --ag-data-color: var(--color-text, #dddddd);
+
+    --ag-selected-row-background-color: var(--color-secondary, rgba(128, 128, 128, 0.25));
+
+    --ag-menu-background-color: var(--color-bg, #1e1e1e);
+    --ag-control-panel-background-color: var(--color-bg, #1e1e1e);
+    --ag-foreground-color: var(--color-text, #ffffff);
+}
+
+
+.ag-theme-alpine-dark ::-webkit-scrollbar-track {
+    background: var(--color-bg);
+}
+
+.ag-theme-alpine-dark {
+    scrollbar-width: thin;
+    background: var(--color-bg);
+    scrollbar-color: var(--color-border, #666666) var(--color-bg);
+}
+
+.Finder .show-map-btn {
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.Finder .show-map-btn:hover {
+    color: var(--color-secondary);
+
+}

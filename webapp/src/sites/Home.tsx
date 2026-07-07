@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import './Home.css'
 import Map from '../components/App/Map'
-import type { coordinateString } from '../types'
+import type { coordinateString, MapData } from '../types'
 import Clipboard from '../components/App/Clipboard'
 import PageWrapper from '../components/PageWrapper'
 import { getMapImageSrc } from '../components/App/MapPreview'
@@ -9,7 +9,7 @@ import { getMapImageSrc } from '../components/App/MapPreview'
 interface HomeProps {
     coordString: coordinateString | null;
     setCoordString: (val: coordinateString | null) => void;
-    mapData: Record<string, any>;
+    mapData: MapData;
 }
 
 function Home({ coordString, setCoordString, mapData }: HomeProps) {
@@ -128,7 +128,7 @@ function Home({ coordString, setCoordString, mapData }: HomeProps) {
                         </div>
 
                         <div className="map-preview">
-                            <img src={getMapImageSrc(activeData?.MapTemplateID)} />
+                            <img src={getMapImageSrc(activeData?.MapTemplateID ?? '')} alt="Map preview" />
                         </div>
                     </aside>
 
