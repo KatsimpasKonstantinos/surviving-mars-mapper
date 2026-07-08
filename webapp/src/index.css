@@ -1,21 +1,27 @@
 :root {
   --color-text: rgb(241, 245, 249);
-  --color-bg: rgb(9, 11, 15);
+  --color-bg: rgba(9, 11, 15, 1);
   --color-primary: rgb(220, 38, 38);
   --color-secondary: rgb(31, 116, 180);
   --color-accent: rgb(255, 255, 0);
-  --color-shadow: rgba(0, 0, 0, 0.5);
+  --color-shadow: rgb(0, 0, 0);
   --color-text-secondary: rgb(146, 154, 161);
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.6)),
+    url('./assets/GP_Green_Mars_Loading_Screen_01_Worlds.webp');
+
+
+  background-size: cover;
+
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;
   color-scheme: light dark;
   color: var(--color-text);
-  background: var(--color-bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -26,9 +32,20 @@
 
   transition: background-color var(--transition-duration) var(--transition-timing), color var(--transition-duration) var(--transition-timing), border-color var(--transition-duration) var(--transition-timing);
 
+  animation: removeBlur 1s ease forwards;
 
   @media (max-width: 1024px) {
     font-size: 16px;
+  }
+}
+
+@keyframes removeBlur {
+  from {
+    filter: blur(100px);
+  }
+
+  to {
+    filter: blur(0px);
   }
 }
 
@@ -37,6 +54,11 @@
   --color-bg: rgb(248, 250, 252);
   --color-shadow: rgba(100, 116, 139, 0.15);
   --color-text-secondary: rgb(94, 96, 100);
+
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.2)),
+    url('./assets/004.webp');
+
 }
 
 #root {
