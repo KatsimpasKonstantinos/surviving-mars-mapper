@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import imageMars from '../../assets/mars.jpg';
+import imageMars from '../../assets/mars.png';
 import './Map.css';
 import type { coordinate, coordinateString } from '../../types';
 import { coordinateTocoordinateString, coordinateStringTocoordinate } from '../../helper';
@@ -10,7 +10,6 @@ interface MapProps {
     setCoordString: (coordStr: coordinateString | null) => void;
 }
 
-
 const MAP_OVERLAYS = [
     "None",
     "Altitude", "Temperature", "Topography", "Difficulty",
@@ -19,16 +18,27 @@ const MAP_OVERLAYS = [
 ];
 
 function calculateCoordinate(x: number, y: number, width: number, height: number): coordinate {
-    let lat = Math.round((y / height) * 140 - 70);
+    const topMargin = height * 0.1;
+    const activeHeight = height * 0.8;
+    
+    let adjustedY = y - topMargin;
+    adjustedY = Math.max(0, Math.min(activeHeight, adjustedY));
+
+    let lat = Math.round((adjustedY / activeHeight) * 140 - 70);
     let long = Math.round((x / width) * 360 - 180);
+    
     lat = Math.max(-70, Math.min(70, lat));
     long = Math.max(-180, Math.min(180, long));
+    
     return { lat, long };
 }
 
 function coordinateToStyles(coord: coordinate) {
     const percentX = (coord.long + 180) / 360;
-    const percentY = (coord.lat + 70) / 140;
+    
+    const activePercentY = (coord.lat + 70) / 140;
+    const percentY = 0.1 + (activePercentY * 0.8);
+    
     return {
         top: `${percentY * 100}%`,
         left: `${percentX * 100}%`
