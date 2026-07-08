@@ -1,24 +1,26 @@
-import React, { useState, useEffect } from 'react'
-import imageMars from '../../assets/mars.jpg'
-import './Map.css'
-import type { coordinate, coordinateString } from '../../types'
+import React, { useState, useEffect } from 'react';
+import imageMars from '../../assets/mars.jpg';
+import './Map.css';
+import type { coordinate, coordinateString } from '../../types';
 import { coordinateTocoordinateString, coordinateStringTocoordinate } from '../../helper';
+import { getMapImageSrc } from './MapPreview';
 
 interface MapProps {
     coordString: coordinateString | null;
     setCoordString: (coordStr: coordinateString | null) => void;
 }
 
-const MARGIN_NS = 0.05;
-const MARGIN_WE = 0.02;
+
+const MAP_OVERLAYS = [
+    "None",
+    "Altitude", "Temperature", "Topography", "Difficulty",
+    "DustDevils", "DustStorm", "Meteor", "ColdWave",
+    "Metals", "Concrete", "Water",
+];
 
 function calculateCoordinate(x: number, y: number, width: number, height: number): coordinate {
-    const usableWidth = width * (1 - (MARGIN_WE * 2));
-    const usableHeight = height * (1 - (MARGIN_NS * 2));
-    const adjustedX = x - (width * MARGIN_WE);
-    const adjustedY = y - (height * MARGIN_NS);
-    let lat = Math.round((adjustedY / usableHeight) * 140 - 70);
-    let long = Math.round((adjustedX / usableWidth) * 360 - 180);
+    let lat = Math.round((y / height) * 140 - 70);
+    let long = Math.round((x / width) * 360 - 180);
     lat = Math.max(-70, Math.min(70, lat));
     long = Math.max(-180, Math.min(180, long));
     return { lat, long };
@@ -27,15 +29,18 @@ function calculateCoordinate(x: number, y: number, width: number, height: number
 function coordinateToStyles(coord: coordinate) {
     const percentX = (coord.long + 180) / 360;
     const percentY = (coord.lat + 70) / 140;
-    const left = (MARGIN_WE + (percentX * (1 - 2 * MARGIN_WE))) * 100;
-    const top = (MARGIN_NS + (percentY * (1 - 2 * MARGIN_NS))) * 100;
-    return { top: `${top}%`, left: `${left}%` };
+    return {
+        top: `${percentY * 100}%`,
+        left: `${percentX * 100}%`
+    };
 }
 
-
 function Map({ coordString, setCoordString }: MapProps) {
-    const [coordinate, setCoordinate] = useState<coordinate | null>(null)
-    const [isDragging, setIsDragging] = useState(false)
+    const [coordinate, setCoordinate] = useState<coordinate | null>(null);
+    const [isDragging, setIsDragging] = useState(false);
+
+    const [activeOverlay, setActiveOverlay] = useState<string>("None");
+    const [overlayOpacity, setOverlayOpacity] = useState<number>(0.70);
 
     useEffect(() => {
         if (coordString) {
@@ -46,51 +51,97 @@ function Map({ coordString, setCoordString }: MapProps) {
         }
     }, [coordString]);
 
-    const updateCoordinate = (event: React.PointerEvent<HTMLImageElement>) => {
-        const rect = event.currentTarget.getBoundingClientRect()
-        const x = event.clientX - rect.left
-        const y = event.clientY - rect.top
-        const newCoordinate = calculateCoordinate(x, y, rect.width, rect.height)
-        setCoordinate(newCoordinate)
-        setCoordString(coordinateTocoordinateString(newCoordinate))
-    }
+    const updateCoordinate = (event: React.PointerEvent<HTMLImageElement> | React.PointerEvent<HTMLDivElement>) => {
+        const rect = event.currentTarget.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        const newCoordinate = calculateCoordinate(x, y, rect.width, rect.height);
+        setCoordinate(newCoordinate);
+        setCoordString(coordinateTocoordinateString(newCoordinate));
+    };
 
-    const handlePointerDown = (event: React.PointerEvent<HTMLImageElement>) => {
-        event.currentTarget.setPointerCapture(event.pointerId)
-        setIsDragging(true)
-        updateCoordinate(event)
-    }
+    const handlePointerDown = (event: React.PointerEvent<HTMLImageElement> | React.PointerEvent<HTMLDivElement>) => {
+        event.currentTarget.setPointerCapture(event.pointerId);
+        setIsDragging(true);
+        updateCoordinate(event);
+    };
 
-    const handlePointerMove = (event: React.PointerEvent<HTMLImageElement>) => {
-        if (isDragging) updateCoordinate(event)
-    }
+    const handlePointerMove = (event: React.PointerEvent<HTMLImageElement> | React.PointerEvent<HTMLDivElement>) => {
+        if (isDragging) updateCoordinate(event);
+    };
 
-    const handlePointerUp = (event: React.PointerEvent<HTMLImageElement>) => {
-        event.currentTarget.releasePointerCapture(event.pointerId)
-        setIsDragging(false)
-    }
+    const handlePointerUp = (event: React.PointerEvent<HTMLImageElement> | React.PointerEvent<HTMLDivElement>) => {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+        setIsDragging(false);
+    };
 
     return (
-        <div className="Map">
-            <img
-                className="image"
-                src={imageMars}
-                alt="Mars map"
-                draggable="false"
+        <div className="Map-container">
+            <div className="controls-bar">
+                <div className="control-group">
+                    <label htmlFor="overlay-select">Map:</label>
+                    <select
+                        id="overlay-select"
+                        className="overlay-dropdown"
+                        value={activeOverlay}
+                        onChange={(e) => setActiveOverlay(e.target.value)}
+                    >
+                        {MAP_OVERLAYS.map(overlay => (
+                            <option key={overlay} value={overlay}>
+                                {overlay === "None" ? "None (Base Map)" : overlay}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                <div className="control-group">
+                    <label htmlFor="opacity-slider">Opacity:</label>
+                    <input
+                        id="opacity-slider"
+                        className="opacity-slider"
+                        type="range"
+                        min="0" max="1" step="0.01"
+                        value={overlayOpacity}
+                        onChange={(e) => setOverlayOpacity(parseFloat(e.target.value))}
+                        disabled={activeOverlay === "None"}
+                    />
+                </div>
+            </div>
+
+            <div
+                className="Map"
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
                 onPointerCancel={handlePointerUp}
-            />
-            {coordinate && (
-                <div
-                    className="marker"
-                    style={coordinateToStyles(coordinate)}
-                    title={coordString || ''}
+            >
+                <img
+                    className="image base-image"
+                    src={imageMars}
+                    alt="Mars Base Map"
+                    draggable="false"
                 />
-            )}
+
+                {activeOverlay !== "None" && (
+                    <img
+                        className="image overlay-image"
+                        src={getMapImageSrc(activeOverlay)}
+                        alt={`${activeOverlay} Heatmap`}
+                        draggable="false"
+                        style={{ opacity: overlayOpacity }}
+                    />
+                )}
+
+                {coordinate && (
+                    <div
+                        className="marker"
+                        style={coordinateToStyles(coordinate)}
+                        title={coordString || ''}
+                    />
+                )}
+            </div>
         </div>
-    )
+    );
 }
 
-export default Map
+export default Map;

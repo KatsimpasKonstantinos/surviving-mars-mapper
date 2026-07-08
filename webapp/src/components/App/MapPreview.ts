@@ -47,6 +47,20 @@ import BlankBigHeartCMix_03 from '../../assets/Maps/BlankBigHeartCMix_03.png';
 import Missing from '../../assets/Maps/Missing.png';
 
 
+import Altitude from '../../assets/heatmaps_clean/Altitude_clean.png';
+import ColdWave from '../../assets/heatmaps_clean/ColdWave_clean.png';
+import Concrete from '../../assets/heatmaps_clean/Concrete_clean.png';
+import Difficulty from '../../assets/heatmaps_clean/Difficulty_clean.png';
+import DustDevils from '../../assets/heatmaps_clean/DustDevils_clean.png';
+import DustStorm from '../../assets/heatmaps_clean/DustStorm_clean.png';
+import Metals from '../../assets/heatmaps_clean/Metals_clean.png';
+import Meteor from '../../assets/heatmaps_clean/Meteor_clean.png';
+import Temperature from '../../assets/heatmaps_clean/Temperature_clean.png';
+import Topography from '../../assets/heatmaps_clean/Topography_clean.png';
+import Water from '../../assets/heatmaps_clean/Water_clean.png';
+
+
+
 export const mapDictionary = {
   "BlankBig_01": BlankBig_01,
   "BlankBig_02": BlankBig_02,
@@ -93,6 +107,17 @@ export const mapDictionary = {
   "BlankBigCratersCMix_01": BlankBigCratersCMix_01,
   "BlankBigCratersCMix_02": BlankBigCratersCMix_02,
   "BlankBigHeartCMix_03": BlankBigHeartCMix_03,
+  "Altitude": Altitude,
+  "ColdWave": ColdWave,
+  "Concrete": Concrete,
+  "Difficulty": Difficulty,
+  "DustDevils": DustDevils,
+  "DustStorm": DustStorm,
+  "Metals": Metals,
+  "Meteor": Meteor,
+  "Temperature": Temperature,
+  "Topography": Topography,
+  "Water": Water,
 };
 
 export function getMapImageSrc(mapName: string): string | undefined {

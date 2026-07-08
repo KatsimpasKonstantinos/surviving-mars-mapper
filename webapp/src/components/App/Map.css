@@ -1,16 +1,86 @@
-.Map {
-    position: relative; 
+.Map-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
     width: 100%;
-    box-shadow: 0 0 30px rgba(122, 184, 230, 0.1);
+}
+
+.controls-bar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 30px;
+    padding: 12px 16px;
+    border: 1px solid var(--color-secondary);
+    border-radius: 8px;
+    color: var(--color-text-secondary);
+    font-size: 0.95rem;
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.overlay-dropdown {
+    background-color: var(--color-bg);
+
+    color: var(--color-text);
+    border: 1px solid var(--color-secondary);
+    padding: 6px 12px;
+    border-radius: 4px;
+    outline: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: border-color 0.2s ease;
+}
+
+
+.overlay-dropdown option {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+}
+
+.opacity-slider {
+    cursor: pointer;
+    accent-color: var(--color-primary);
+    width: 120px;
+    transition: opacity 0.3s ease;
+}
+
+.opacity-slider:disabled {
+    cursor: not-allowed;
+    opacity: 0.3;
+    filter: grayscale(100%);
+}
+
+.Map {
+    position: relative;
+    width: 100%;
+    box-shadow: 0 0 30px var(--color-shadow);
     border-radius: 8px;
     overflow: hidden;
-    border: 1px solid rgba(122, 184, 230, 0.3);
-    user-select: none; 
+    border: 1px solid var(--color-secondary);
+    user-select: none;
+    touch-action: none;
+    background-color: var(--color-bg);
 }
 
 .Map .image {
     width: 100%;
-    display: block; 
+    display: block;
+}
+
+.Map .overlay-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
 }
 
 .Map .marker {
@@ -21,8 +91,7 @@
     max-width: 75px;
     transform: translate(-50%, -50%);
     pointer-events: none;
-    opacity: 0.7;
-
+    opacity: 0.9;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cpolygon points='145,100 122.5,138.97 77.5,138.97 55,100 77.5,61.03 122.5,61.03' fill='none' stroke='%23FFFFFF' stroke-width='22'/%3E%3Cpath d='M 115 38 L 64 38 L 38 83' fill='none' stroke='%23FFFFFF' stroke-width='8'/%3E%3Cpath d='M 85 162 L 136 162 L 162 117' fill='none' stroke='%23FFFFFF' stroke-width='8'/%3E%3C/svg%3E");
     background-size: contain;
     background-repeat: no-repeat;
