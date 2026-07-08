@@ -1,3 +1,6 @@
+-- create a new Mod with a Scrtip and use this code
+
+
 local orig_Init = PGMissionLandingSpotRemastered.Init
 
 function PGMissionLandingSpotRemastered:Init(parent, context)
