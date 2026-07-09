@@ -1,0 +1,29 @@
+.loading-wrapper {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+    gap: 16px;
+}
+
+
+.progress-container {
+    width: 250px;
+    height: 8px;
+    background-color: var(--color-bg);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: var(--color-secondary);
+    transition: width 0.2s ease-out;
+}
+
+.progress-text {
+    color: #6b7280;
+    font-size: 1rem;
+    margin: 0;
+}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import imageMars from '../../assets/mars.png';
+import imageMars from '../../assets/mars.webp';
 import './Map.css';
 import type { coordinate, coordinateString } from '../../types';
 import { coordinateTocoordinateString, coordinateStringTocoordinate } from '../../helper';
