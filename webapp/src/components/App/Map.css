@@ -95,3 +95,11 @@
     background-repeat: no-repeat;
     background-position: center;
 }
+
+@media (max-width: 600px) {
+    .controls-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+}

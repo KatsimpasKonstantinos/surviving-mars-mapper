@@ -13,16 +13,18 @@
 .Home .main-container {
     flex-grow: 1;
     position: relative;
-    padding: 40px;
+    padding-right: 40px;
+    padding-left: 40px;
+    padding-top: 20px;
+    padding-bottom: 20px;
     gap: 60px;
     display: flex;
     flex-direction: row;
-    align-items: center;
-    justify-content: center;
+    align-items: baseline;
 }
 
 .Home .info-panel {
-    width: 30vw;
+    width: 25vw;
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
@@ -33,7 +35,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    max-width: 1000px;
+    max-width: 1600px;
 }
 
 .Home .location-card {
@@ -83,7 +85,7 @@
             rgb(from var(--color-secondary) r g b / 0) 100%);
     padding: 20px;
     padding-top: 0;
-    margin-top: 20px;
+    margin-top: 10px;
 }
 
 .Home .analysis-column h3 {
@@ -152,8 +154,15 @@
     background: linear-gradient(90deg,
             rgb(from var(--color-secondary) r g b / 0.2) 0%,
             rgb(from var(--color-secondary) r g b / 0) 100%);
-    margin-top: 20px;
+    margin-top: 10px;
     border-left: 3px solid var(--color-secondary);
+}
+
+.Home .map-preview img {
+    width: 100%;
+    max-width: 90vw;
+    height: auto;
+    display: block;
 }
 
 @media (max-width: 1200px) {
@@ -169,11 +178,17 @@
 
     .Home .map-section {
         width: 100%;
-        margin-top: 20px;
+        margin-top: 10px;
     }
 
     .Home .coordinate-input {
         width: 100%;
         max-width: 250px;
+    }
+}
+
+@media (max-width: 600px) {
+    .Home .analysis-section {
+        grid-template-columns: 1fr;
     }
 }
