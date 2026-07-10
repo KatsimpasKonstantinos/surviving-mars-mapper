@@ -11,10 +11,10 @@ function Navbar() {
 
     const [downloadPopupVisible, setDownloadPopupVisible] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    
+
     const dropdownRef = useRef<HTMLDivElement | null>(null);
     // 1. Create a new ref for the entire navbar
-    const navRef = useRef<HTMLElement | null>(null); 
+    const navRef = useRef<HTMLElement | null>(null);
 
     useEffect(() => {
         document.documentElement.classList.toggle("light", isLightMode);
@@ -27,7 +27,7 @@ function Navbar() {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setDownloadPopupVisible(false);
             }
-            
+
             // 2. Close the mobile menu if clicking outside the entire navbar
             if (navRef.current && !navRef.current.contains(event.target as Node)) {
                 setIsMobileMenuOpen(false);
@@ -49,21 +49,21 @@ function Navbar() {
                         <h1>Surviving Mars Mapper</h1>
                     </Link>
 
-                    <button 
-                        className="hamburger-btn" 
+                    <button
+                        className="hamburger-btn"
                         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                         aria-label="Toggle navigation menu"
                         aria-expanded={isMobileMenuOpen}
                     >
                         <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
-                            <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/>
+                            <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" />
                         </svg>
                     </button>
                 </div>
 
                 <div className={`right-section ${isMobileMenuOpen ? 'open' : ''}`}>
-                    <NavLink 
-                        to="/" 
+                    <NavLink
+                        to="/"
                         className={({ isActive }) => `nav-button ${isActive ? 'active' : ''}`}
                         end
                         onClick={closeMobileMenu}
@@ -71,16 +71,24 @@ function Navbar() {
                         Map
                     </NavLink>
 
-                    <NavLink 
-                        to="/finder" 
+                    <NavLink
+                        to="/finder"
                         className={({ isActive }) => `nav-button ${isActive ? 'active' : ''}`}
                         onClick={closeMobileMenu}
                     >
                         Finder
                     </NavLink>
-                    
-                    <NavLink 
-                        to="/faq" 
+
+                    <NavLink
+                        to="/breakthrough"
+                        className={({ isActive }) => `nav-button ${isActive ? 'active' : ''}`}
+                        onClick={closeMobileMenu}
+                    >
+                        Breakthrough
+                    </NavLink>
+
+                    <NavLink
+                        to="/faq"
                         className={({ isActive }) => `nav-button ${isActive ? 'active' : ''}`}
                         onClick={closeMobileMenu}
                     >

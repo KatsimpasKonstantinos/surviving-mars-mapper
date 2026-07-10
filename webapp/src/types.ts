@@ -22,6 +22,9 @@ export interface MapDataEntry {
     WaterBars?: number | string;
 
     MapTemplateID?: string;
+
+    Seed?: string;
+    xxhashShuffleBreakThroughTech?: string;
 }
 
 export type MapData = Record<string, MapDataEntry>;

@@ -4,7 +4,7 @@ import Map from '../components/App/Map'
 import type { coordinateString, MapData } from '../types'
 import Clipboard from '../components/App/Clipboard'
 import PageWrapper from '../components/PageWrapper'
-import { getMapImageSrc } from '../components/App/MapPreview'
+import { getMapImageSrc } from '../helper/MapPreview'
 
 interface HomeProps {
     coordString: coordinateString | null;

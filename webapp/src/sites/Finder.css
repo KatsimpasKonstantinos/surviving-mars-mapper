@@ -26,6 +26,8 @@
     --ag-menu-background-color: var(--color-bg, #1e1e1e);
     --ag-control-panel-background-color: var(--color-bg, #1e1e1e);
     --ag-foreground-color: var(--color-text, #ffffff);
+    font-size: 1rem;
+
 }
 
 .ag-theme-alpine-dark ::-webkit-scrollbar-track {
@@ -35,12 +37,11 @@
 .ag-theme-alpine-dark {
     scrollbar-width: thin;
     background: var(--color-bg);
-    scrollbar-color: var(--color-border, #666666) var(--color-bg);
+    scrollbar-color: var(--color-text-secondary) var(--color-bg);
 }
 
 .Finder .show-map-btn {
     text-decoration: none;
-    font-weight: bold;
     color: var(--color-text);
 }
 

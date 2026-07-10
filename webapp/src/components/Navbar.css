@@ -18,11 +18,11 @@
     gap: 1.5rem;
 }
 
-/* NEW: Keeps logo and hamburger together */
 .navbar-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    font-family: var(--font-heading);
 }
 
 .navbar-logo {
@@ -37,11 +37,10 @@
 
 .navbar-logo h1 {
     margin: 0;
-    font-size: 1.5rem;
+    font-size: 1.7rem;
     font-weight: 700;
 }
 
-/* NEW: Hamburger button hidden on desktop */
 .hamburger-btn {
     display: none;
     background: transparent;
@@ -59,19 +58,23 @@
 .right-section {
     display: flex;
     align-items: center;
-    gap: 1.5rem;
+    gap: 1rem;
+    
 }
 
 .dropdown-container {
     position: relative;
     display: inline-block;
+    
 }
 
 .nav-button {
     background-color: transparent;
     color: var(--color-text);
-    font-family: inherit;
-    font-size: 0.95rem;
+    font-family: var(--font);
+    font-size: 1rem;
+    font-family: var(--font-subheading);
+
     font-weight: 500;
     text-decoration: none;
     padding: 0.5rem 1rem;
@@ -111,43 +114,40 @@
     border-color: var(--color-primary);
     cursor: default;
 }
-/* --- MOBILE RESPONSIVE STYLES --- */
+
 @media (max-width: 1200px) {
     .navbar {
-        position: relative; /* Crucial: sets the anchor for the absolute dropdown */
-        padding: 1rem 2rem; /* Keeps padding consistent */
+        position: relative; 
+        padding: 1rem 2rem; 
     }
 
     .navbar-header {
-        width: 100%; /* Spreads logo and hamburger apart */
+        width: 100%; 
     }
 
     .hamburger-btn {
-        display: block; /* Show hamburger */
+        display: block;
     }
 
     .right-section {
-        display: none; /* Hide links by default */
+        display: none; 
         position: absolute;
-        top: 100%; /* Places dropdown exactly at the bottom edge of the navbar */
+        top: 100%; 
         right: 0;
         width: 120px;
         flex-direction: column;
         margin-top: 0;
         gap: 1rem;
         
-        /* Dropdown styling */
         padding: 1.5rem 2rem;
-        background-color: var(--color-bg, #1a1a1a); /* Fallback added just in case */
+        background-color: var(--color-bg, #1a1a1a);
         border: 2px solid var(--color-primary);
     }
 
-    /* Shown when state toggles */
     .right-section.open {
         display: flex; 
     }
 
-    /* Make buttons stretch for better mobile tapping */
     .nav-button {
         width: 100%;
         text-align: center;

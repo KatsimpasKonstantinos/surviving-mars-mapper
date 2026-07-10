@@ -7,10 +7,10 @@
   --color-shadow: rgb(0, 0, 0);
   --color-text-secondary: rgb(146, 154, 161);
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
+  --font: libel-suit;
+  --font-heading: scheme;
+  --font-subheading: gnuolane;
+  
   background-image:
     linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.6)),
     url('./assets/GP_Green_Mars_Loading_Screen_01_Worlds.webp');
@@ -18,7 +18,7 @@
 
   background-size: cover;
 
-  font: 18px/145% var(--sans);
+  font: 18px/145% var(--font);
   letter-spacing: 0.18px;
   color-scheme: light dark;
   color: var(--color-text);
@@ -78,4 +78,35 @@ body {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+
+@font-face {
+  font-family: 'gnuolane'; 
+  
+  src: url('./assets/fonts/gnuolane\ rg.ttf') format('truetype');
+  
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'libel-suit'; 
+  
+  src: url('./assets/fonts/libel-suit-bk.ttf') format('truetype');
+  
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'scheme'; 
+  
+  src: url('./assets/fonts/scheme_bk.ttf') format('truetype');
+  
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
 }

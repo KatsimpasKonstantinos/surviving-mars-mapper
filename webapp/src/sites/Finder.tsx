@@ -3,7 +3,7 @@ import { AgGridReact } from 'ag-grid-react';
 import { Link } from 'react-router-dom';
 import type { ColDef, ColGroupDef, RowClickedEvent, ValueGetterParams, ICellRendererParams } from 'ag-grid-community';
 import { ModuleRegistry, AllCommunityModule, ValidationModule } from 'ag-grid-community';
-import { getMapImageSrc } from '../components/App/MapPreview';
+import { getMapImageSrc } from '../helper/MapPreview';
 
 ModuleRegistry.registerModules([AllCommunityModule, ValidationModule]);
 
@@ -13,7 +13,6 @@ import './Finder.css';
 import type { MapData, MapDataEntry } from '../types';
 
 interface FinderProps {
-  coordString: string | null;
   setCoordString: (val: string | null) => void;
   mapData: MapData;
 }
@@ -28,9 +27,8 @@ const parseNumber = (val: string | number | undefined) => {
   return isNaN(num) ? val : num;
 };
 
-function Finder({ coordString, setCoordString, mapData }: FinderProps) {
+function Finder({ setCoordString, mapData }: FinderProps) {
 
-  console.log(coordString);
 
   const rowData = useMemo<FinderRowData[]>(() => {
     return Object.entries(mapData).map(([coord, data]) => ({

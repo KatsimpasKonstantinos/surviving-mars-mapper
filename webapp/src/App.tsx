@@ -10,6 +10,7 @@ import FAQ from './sites/FAQ';
 import Finder from './sites/Finder';
 import type { coordinateString } from './types';
 import Loading from './components/Loading';
+import Breakthrough from './sites/Breakthrough';
 
 const loadingMessages = [
   "Assigning idle drones to terraform...",
@@ -36,10 +37,10 @@ function App() {
 
         const contentLength = response.headers.get('content-length');
         const total = contentLength ? parseInt(contentLength, 10) : 0;
-        
+
         let loaded = 0;
         let csvText = '';
-        
+
         const reader = response.body?.getReader();
         const decoder = new TextDecoder('utf-8');
 
@@ -54,7 +55,7 @@ function App() {
             }
             csvText += decoder.decode(value, { stream: true });
           }
-          csvText += decoder.decode(); 
+          csvText += decoder.decode();
         }
 
         Papa.parse(csvText, {
@@ -93,29 +94,41 @@ function App() {
           path="/"
           element={
             isLoadingData ? (
-              <Loading progress={loadingProgress} messages={loadingMessages} /> 
+              <Loading progress={loadingProgress} messages={loadingMessages} />
             ) : (
-              <Home 
-                coordString={coordString} 
-                setCoordString={(val: string | null) => setCoordStringState(val as coordinateString)} 
-                mapData={mapData} 
+              <Home
+                coordString={coordString}
+                setCoordString={(val: string | null) => setCoordStringState(val as coordinateString)}
+                mapData={mapData}
               />
             )
           }
         />
-        <Route 
-          path="/finder" 
+        <Route
+          path="/finder"
           element={
             isLoadingData ? (
               <Loading progress={loadingProgress} messages={loadingMessages} />
             ) : (
-              <Finder 
-                coordString={coordString} 
-                setCoordString={(val: string | null) => setCoordStringState(val as coordinateString)} 
+              <Finder
+                setCoordString={(val: string | null) => setCoordStringState(val as coordinateString)}
                 mapData={mapData}
               />
             )
-          } 
+          }
+        />
+        <Route
+          path="/breakthrough"
+          element={
+            isLoadingData ? (
+              <Loading progress={loadingProgress} messages={loadingMessages} />
+            ) : (
+              <Breakthrough
+                coordString={coordString}
+                mapData={mapData}
+              />
+            )
+          }
         />
         <Route path="/faq" element={<FAQ />} />
         <Route path="/*" element={<NotFound />} />

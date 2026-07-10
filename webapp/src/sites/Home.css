@@ -1,7 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Teko:wght@300;400;500&family=Barlow+Condensed:wght@400;600&display=swap');
 
 .Home {
-    font-family: 'Barlow Condensed', sans-serif;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -51,6 +50,7 @@
     line-height: 1;
     letter-spacing: 1px;
     margin-bottom: 5px;
+    
 }
 
 .Home .location-card .hasColonyName {
@@ -58,16 +58,22 @@
 }
 
 .Home .location-card h2 {
-    font-size: 1.5em;
+
+    font-size: 1.3em;
     margin-bottom: 15px;
     font-weight: 600;
+}
+
+.Home .location-card input {
+    font-family: var(--font-subheading);
+
 }
 
 .Home .stats-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     row-gap: 5px;
-    font-size: 1.2em;
+    font-size: 1.1em;
 }
 
 .Home .stats-grid .label {
@@ -89,6 +95,7 @@
 }
 
 .Home .analysis-column h3 {
+    font-family: var(--font-subheading);
     font-size: 1.2em;
     margin-bottom: 15px;
     letter-spacing: 1px;
@@ -102,7 +109,7 @@
 }
 
 .Home .analysis-name {
-    font-size: 1.2em;
+    font-size: 1.1em;
     margin-left: 15px;
 }
 
@@ -131,7 +138,6 @@
     background-color: var(--color-background-dark);
     border: 1px solid var(--color-text-secondary);
     color: var(--color-text-primary);
-    font-family: 'Barlow Condensed', sans-serif;
     font-size: 1.2em;
     padding: 5px 10px;
     margin-right: 10px;
