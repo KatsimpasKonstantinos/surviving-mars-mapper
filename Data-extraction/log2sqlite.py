@@ -1,4 +1,5 @@
 import sqlite3
+import os
 
 input_txt_file = "data.log"
 sqlite_db_file = "mars_data.db"
@@ -7,13 +8,20 @@ table_name = "mars_data"
 CSV_START = "================== CSV START =================="
 CSV_END = "================== CSV END =================="
 
+COLUMN_COUNT = 28
+
 
 def create_database():
+    # Delete old database
+    if os.path.exists(sqlite_db_file):
+        os.remove(sqlite_db_file)
+        print(f"Deleted old database: {sqlite_db_file}")
+
     conn = sqlite3.connect(sqlite_db_file)
     cursor = conn.cursor()
 
     cursor.execute(f"""
-        CREATE TABLE IF NOT EXISTS {table_name} (
+        CREATE TABLE {table_name} (
             Coords TEXT PRIMARY KEY,
             Lat REAL,
             Long REAL,
@@ -27,6 +35,23 @@ def create_database():
             Altitude INTEGER,
             Temperature INTEGER,
             Difficulty INTEGER,
+
+            MetalsBars INTEGER,
+            ConcreteBars INTEGER,
+            WaterBars INTEGER,
+            DustDevilsBars INTEGER,
+            DustStormBars INTEGER,
+            MeteorBars INTEGER,
+            ColdWaveBars INTEGER,
+
+            Metals INTEGER,
+            Concrete INTEGER,
+            Water INTEGER,
+            DustDevils INTEGER,
+            DustStorm INTEGER,
+            Meteor INTEGER,
+            ColdWave INTEGER,
+
             MapTemplateID TEXT
         )
     """)
@@ -66,19 +91,23 @@ def process_data(conn):
 
         row = line.split(",")
 
-        if len(row) == 14:
+        if len(row) == COLUMN_COUNT:
             data_to_insert.append(tuple(row))
         else:
             print(
-                f"Skipping line with incorrect column count ({len(row)} expected 14): "
-                f"{line[:80]}..."
+                f"Skipping line with incorrect column count "
+                f"({len(row)} found, expected {COLUMN_COUNT}): "
+                f"{line[:100]}..."
             )
 
     if data_to_insert:
-        placeholders = ", ".join(["?"] * 14)
+        placeholders = ", ".join(["?"] * COLUMN_COUNT)
 
         cursor.executemany(
-            f"INSERT OR REPLACE INTO {table_name} VALUES ({placeholders})",
+            f"""
+            INSERT INTO {table_name}
+            VALUES ({placeholders})
+            """,
             data_to_insert,
         )
 
