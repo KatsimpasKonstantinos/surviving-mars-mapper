@@ -19,4 +19,4 @@ def sqlite_to_csv(db_path, table_name, csv_file_path):
     conn.close()
     print(f"Successfully converted '{table_name}' to '{csv_file_path}'")
 
-sqlite_to_csv('output.db', 'mars_data', 'output.csv')
+sqlite_to_csv('mars_data.db', 'mars_data', 'mars_data.csv')
