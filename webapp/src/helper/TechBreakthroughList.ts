@@ -67,7 +67,3 @@ export let TechBreakthroughList = [
     "FactoryAutomation",
     "GemArchitecture"
 ];
-
-export type BreakthroughTech = {
-    name: typeof TechBreakthroughList[number];
-};
