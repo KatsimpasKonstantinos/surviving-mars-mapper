@@ -32,9 +32,9 @@ local function GetTopographyAndRating(map_template_id)
     if rating <= 59 then
         topo = "Very Flat"
     elseif rating <= 99 then
-        topo = "Steep"
-    elseif rating <= 139 then
         topo = "Rough"
+    elseif rating <= 139 then
+        topo = "Steep"
     end
 
     return topo, rating
