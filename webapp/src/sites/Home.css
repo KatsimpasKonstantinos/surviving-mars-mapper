@@ -19,7 +19,7 @@
     gap: 60px;
     display: flex;
     flex-direction: row;
-    align-items: baseline;
+    align-items: flex-start;
 }
 
 .Home .info-panel {
@@ -31,6 +31,7 @@
 
 .Home .map-section {
     flex-grow: 1;
+    width: 100%;
     display: flex;
     justify-content: center;
     align-items: center;

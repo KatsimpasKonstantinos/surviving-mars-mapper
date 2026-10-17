@@ -1,0 +1,22 @@
+.GlobeMap {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    overflow: hidden;
+    background-color: #090b0f;
+    position: relative;
+    user-select: none;
+    touch-action: none;
+}
+
+.GlobeMap.mode-3d {
+    cursor: grab;
+}
+
+.GlobeMap.mode-3d:active {
+    cursor: grabbing;
+}
+
+.GlobeMap.mode-2d {
+    cursor: crosshair;
+}

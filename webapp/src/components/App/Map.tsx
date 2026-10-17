@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, Suspense, lazy } from 'react';
 import imageMars from '../../assets/mars.webp';
 import './Map.css';
-import type { coordinate, coordinateString } from '../../types';
-import { coordinateTocoordinateString, coordinateStringTocoordinate } from '../../helper';
-import { getMapImageSrc } from '../../helper/MapPreview';
+import type { coordinateString } from '../../types';
+
+// Lazy-load the unified 2D/3D Three.js map so Three.js stays out of the main bundle
+const GlobeMap = lazy(() => import('./GlobeMap'));
 
 interface MapProps {
     coordString: coordinateString | null;
@@ -17,77 +18,32 @@ const MAP_OVERLAYS = [
     "Metals", "Concrete", "Water",
 ];
 
-function calculateCoordinate(x: number, y: number, width: number, height: number): coordinate {
-    const topMargin = height * 0.1;
-    const activeHeight = height * 0.8;
-    
-    let adjustedY = y - topMargin;
-    adjustedY = Math.max(0, Math.min(activeHeight, adjustedY));
-
-    let lat = Math.round((adjustedY / activeHeight) * 140 - 70);
-    let long = Math.round((x / width) * 360 - 180);
-    
-    lat = Math.max(-70, Math.min(70, lat));
-    long = Math.max(-180, Math.min(180, long));
-    
-    return { lat, long };
-}
-
-function coordinateToStyles(coord: coordinate) {
-    const percentX = (coord.long + 180) / 360;
-    
-    const activePercentY = (coord.lat + 70) / 140;
-    const percentY = 0.1 + (activePercentY * 0.8);
-    
-    return {
-        top: `${percentY * 100}%`,
-        left: `${percentX * 100}%`
-    };
-}
-
 function Map({ coordString, setCoordString }: MapProps) {
-    const [coordinate, setCoordinate] = useState<coordinate | null>(null);
-    const [isDragging, setIsDragging] = useState(false);
-
     const [activeOverlay, setActiveOverlay] = useState<string>("None");
     const [overlayOpacity, setOverlayOpacity] = useState<number>(0.70);
-
-    useEffect(() => {
-        if (coordString) {
-            const parsedCoordinate = coordinateStringTocoordinate(coordString);
-            setCoordinate(parsedCoordinate);
-        } else {
-            setCoordinate(null);
-        }
-    }, [coordString]);
-
-    const updateCoordinate = (event: React.PointerEvent<HTMLImageElement> | React.PointerEvent<HTMLDivElement>) => {
-        const rect = event.currentTarget.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
-        const newCoordinate = calculateCoordinate(x, y, rect.width, rect.height);
-        setCoordinate(newCoordinate);
-        setCoordString(coordinateTocoordinateString(newCoordinate));
-    };
-
-    const handlePointerDown = (event: React.PointerEvent<HTMLImageElement> | React.PointerEvent<HTMLDivElement>) => {
-        event.currentTarget.setPointerCapture(event.pointerId);
-        setIsDragging(true);
-        updateCoordinate(event);
-    };
-
-    const handlePointerMove = (event: React.PointerEvent<HTMLImageElement> | React.PointerEvent<HTMLDivElement>) => {
-        if (isDragging) updateCoordinate(event);
-    };
-
-    const handlePointerUp = (event: React.PointerEvent<HTMLImageElement> | React.PointerEvent<HTMLDivElement>) => {
-        event.currentTarget.releasePointerCapture(event.pointerId);
-        setIsDragging(false);
-    };
+    const [viewMode, setViewMode] = useState<'2d' | '3d'>('3d');
 
     return (
         <div className="Map-container">
             <div className="controls-bar">
+                {/* ---- View Mode Toggle ---- */}
+                <div className="view-toggle">
+                    <button
+                        className={`view-toggle-btn${viewMode === '2d' ? ' active' : ''}`}
+                        onClick={() => setViewMode('2d')}
+                        aria-pressed={viewMode === '2d'}
+                    >
+                        2D
+                    </button>
+                    <button
+                        className={`view-toggle-btn${viewMode === '3d' ? ' active' : ''}`}
+                        onClick={() => setViewMode('3d')}
+                        aria-pressed={viewMode === '3d'}
+                    >
+                        3D
+                    </button>
+                </div>
+
                 <div className="control-group">
                     <label htmlFor="overlay-select">Map:</label>
                     <select
@@ -118,37 +74,32 @@ function Map({ coordString, setCoordString }: MapProps) {
                 </div>
             </div>
 
-            <div
-                className="Map"
-                onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
-                onPointerCancel={handlePointerUp}
-            >
+            {/* ---- Unified 2D/3D Map Stage ---- */}
+            <div className="map-stage">
+                {/* Hidden sizer image keeps the stage's exact intrinsic aspect ratio */}
                 <img
-                    className="image base-image"
+                    className="map-sizer"
                     src={imageMars}
-                    alt="Mars Base Map"
+                    alt=""
+                    aria-hidden="true"
                     draggable="false"
                 />
 
-                {activeOverlay !== "None" && (
-                    <img
-                        className="image overlay-image"
-                        src={getMapImageSrc(activeOverlay)}
-                        alt={`${activeOverlay} Heatmap`}
-                        draggable="false"
-                        style={{ opacity: overlayOpacity }}
-                    />
-                )}
-
-                {coordinate && (
-                    <div
-                        className="marker"
-                        style={coordinateToStyles(coordinate)}
-                        title={coordString || ''}
-                    />
-                )}
+                <div className="map-canvas-layer">
+                    <Suspense fallback={
+                        <div className="globe-loading">
+                            <span className="globe-loading-text">Initialising Map…</span>
+                        </div>
+                    }>
+                        <GlobeMap
+                            viewMode={viewMode}
+                            coordString={coordString}
+                            setCoordString={setCoordString}
+                            activeOverlay={activeOverlay}
+                            overlayOpacity={overlayOpacity}
+                        />
+                    </Suspense>
+                </div>
             </div>
         </div>
     );
