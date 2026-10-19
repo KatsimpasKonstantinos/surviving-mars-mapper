@@ -6,6 +6,20 @@ local CSV_HEADERS =
     "Metals,Concrete,Water,DustDevils,DustStorm,Meteor,ColdWave," ..
     "MapTemplateID"
 
+local limit_values = {60, 95, 140, 256}
+
+local function GetBars(val)
+    val = val or 0
+
+    for i = 1, 4 do
+        if val <= limit_values[i] then
+            return i
+        end
+    end
+
+    return 4
+end
+
 local function GetSiteName(lat, long, locales_id)
     local name = ""
     if locales_id and rawget(_G, "MarsLocales") and MarsLocales[locales_id] then
@@ -56,20 +70,6 @@ local function FormatCoordinates(lat, long)
     )
 
     return coord_str, lat_deg, long_deg
-end
-
-local function GetBars(val)
-    val = val or 0
-
-    if val < 64 then
-        return 1
-    elseif val < 128 then
-        return 2
-    elseif val < 192 then
-        return 3
-    else
-        return 4
-    end
 end
 
 function PGMissionLandingSpotRemastered:Init(parent, context)
