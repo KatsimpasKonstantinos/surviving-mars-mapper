@@ -18,7 +18,7 @@ import { getMapImageSrc } from '../../helper/MapPreview';
 import './GlobeMap.css';
 
 /* ------------------------------------------------------------------ */
-/*  Constants                                                          */
+/*  Constants                                                         */
 /* ------------------------------------------------------------------ */
 
 const SPHERE_RADIUS = 0.8;
@@ -27,18 +27,23 @@ const GRID_SEGMENTS_X = 128;
 const GRID_SEGMENTS_Y = 64;
 const CAMERA_FOV = 45;
 const CAMERA_Z = 2.45;
-const TRANSITION_DURATION = 0.85; // seconds for 2D <-> 3D unfold
+const TRANSITION_DURATION = 1.15; // Slightly longer to let the staged wave breathe
 
 /* ------------------------------------------------------------------ */
-/*  GLSL Shaders                                                       */
+/*  GLSL Shaders                                                      */
 /* ------------------------------------------------------------------ */
 
 const vertexShader = /* glsl */ `
 varying vec2 vUv;
+varying vec3 vNormal;
+varying vec3 vViewPosition;
 
 void main() {
     vUv = uv;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    vNormal = normalize(normalMatrix * normal);
+    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+    vViewPosition = -mvPosition.xyz;
+    gl_Position = projectionMatrix * mvPosition;
 }
 `;
 
@@ -47,8 +52,13 @@ uniform sampler2D baseMap;
 uniform sampler2D overlayMap;
 uniform float overlayOpacity;
 uniform bool hasOverlay;
+uniform float uMorph;           // 0.0 = 2D flat, 1.0 = 3D globe
+uniform float uTransitionPulse; // sin(progress * PI): 0 at rest, 1 at mid-transition
+uniform float uScanlinePos;     // 0.0 -> 1.0 sweep progress
 
 varying vec2 vUv;
+varying vec3 vNormal;
+varying vec3 vViewPosition;
 
 void main() {
     vec4 baseColor = texture2D(baseMap, vUv);
@@ -67,12 +77,38 @@ void main() {
         }
     }
 
+    // 1. Sci-Fi Holographic Grid & Scanline Wave during 2D <-> 3D transition
+    if (uTransitionPulse > 0.001) {
+        // 18 longitude x 9 latitude sectors (20-degree intervals)
+        vec2 gridUv = fract(vUv * vec2(18.0, 9.0));
+        vec2 gridDist = min(gridUv, 1.0 - gridUv);
+        float gridLine = smoothstep(0.035, 0.008, min(gridDist.x, gridDist.y));
+
+        // Sweeping radial wave from center UV (0.5, 0.5)
+        float distFromCenter = length((vUv - 0.5) * vec2(2.0, 1.0));
+        float scanWave = exp(-pow((distFromCenter - uScanlinePos * 1.4) * 7.0, 2.0));
+
+        vec3 holoColor = vec3(1.0, 0.48, 0.2); // Martian telemetry amber
+        float holoStrength = (gridLine * 0.35 + scanWave * 0.55) * uTransitionPulse;
+        baseColor.rgb += holoColor * holoStrength;
+    }
+
+    // 2. 3D Martian Fresnel Atmosphere Rim Glow (fades in smoothly in 3D mode)
+    if (uMorph > 0.01) {
+        vec3 normal = normalize(vNormal);
+        vec3 viewDir = normalize(vViewPosition);
+        float fresnel = pow(1.0 - abs(dot(normal, viewDir)), 3.2);
+        vec3 atmosphereColor = vec3(0.95, 0.38, 0.15);
+        baseColor.rgb += atmosphereColor * fresnel * 0.42 * uMorph;
+    }
+
     gl_FragColor = baseColor;
+    #include <colorspace_fragment>
 }
 `;
 
 /* ------------------------------------------------------------------ */
-/*  UV <-> Coordinate & Parametric Unfold Math                         */
+/*  UV <-> Coordinate & Staged Parametric Unfold Math                 */
 /* ------------------------------------------------------------------ */
 
 function sinc(x: number): number {
@@ -81,6 +117,11 @@ function sinc(x: number): number {
 
 function easeInOutCubic(x: number): number {
     return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+}
+
+function smoothstep(edge0: number, edge1: number, x: number): number {
+    const t = THREE.MathUtils.clamp((x - edge0) / (edge1 - edge0), 0, 1);
+    return t * t * (3 - 2 * t);
 }
 
 /**
@@ -113,6 +154,27 @@ function coordinateToUv(coord: coordinate): { u: number; v: number } {
 }
 
 /**
+ * Compute staged horizontal (tx) and vertical (ty) fold factors for a given UV.
+ * Creates an origami-like wave where longitude wraps slightly ahead of latitude
+ * and ripples outward from the center of the map.
+ */
+function getStagedMorphFactors(u: number, v: number, t: number): { tx: number; ty: number } {
+    if (t <= 0) return { tx: 0, ty: 0 };
+    if (t >= 1) return { tx: 1, ty: 1 };
+
+    // Distance from center [0, ~0.7] creates a spatial ripple across the mesh
+    const distX = Math.abs(u - 0.5);
+    const distY = Math.abs(v - 0.5);
+
+    // Longitude curls first, starting from the outer edges inward
+    const tx = smoothstep(0.0, 0.82, t + (0.5 - distX) * 0.12 * Math.sin(t * Math.PI));
+    // Latitude cinches the poles second, creating a cylinder -> sphere progression
+    const ty = smoothstep(0.18, 1.0, t - distY * 0.1 * Math.sin(t * Math.PI));
+
+    return { tx, ty };
+}
+
+/**
  * Evaluate the 3D position and outward unit normal for any UV (u, v)
  * at morph factor t in [0, 1] (0 = flat 2D plane, 1 = 3D sphere).
  */
@@ -128,18 +190,24 @@ function evaluateSurface(
     const lambda = (u - 0.5) * Math.PI * 2; // [-pi, pi]
     const psi = (v - 0.5) * Math.PI;        // [-pi/2, pi/2]
 
-    const lt = lambda * t;
-    const pt = psi * t;
+    const { tx, ty } = getStagedMorphFactors(u, v, t);
+
+    const lt = lambda * tx;
+    const pt = psi * ty;
 
     const cosPt = Math.cos(pt);
     const sinPt = Math.sin(pt);
 
-    const scaleX = THREE.MathUtils.lerp(planeWidth / (Math.PI * 2), SPHERE_RADIUS, t);
-    const scaleY = THREE.MathUtils.lerp(planeHeight / Math.PI, SPHERE_RADIUS, t);
+    const scaleX = THREE.MathUtils.lerp(planeWidth / (Math.PI * 2), SPHERE_RADIUS, tx);
+    const scaleY = THREE.MathUtils.lerp(planeHeight / Math.PI, SPHERE_RADIUS, ty);
+
+    // Subtle organic wave ripple perpendicular to the surface mid-transition
+    const wavePulse = Math.sin(t * Math.PI);
+    const ripple = Math.sin(lambda * 2.0 + t * Math.PI * 2.0) * 0.035 * wavePulse;
 
     const x = cosPt * lambda * sinc(lt) * scaleX;
     const y = psi * sinc(pt) * scaleY;
-    const z = SPHERE_RADIUS * (cosPt * Math.cos(lt) - 1.0 + t);
+    const z = SPHERE_RADIUS * (cosPt * Math.cos(lt) - 1.0 + tx) + ripple;
 
     outPos.set(x, y, z);
 
@@ -153,7 +221,7 @@ function evaluateSurface(
 }
 
 /**
- * Update all vertices of the grid geometry for a given morph factor t in [0, 1].
+ * Update all vertices and normals of the grid geometry for a given morph factor t in [0, 1].
  */
 function updateMorphedGeometry(
     geometry: THREE.BufferGeometry,
@@ -162,13 +230,15 @@ function updateMorphedGeometry(
     planeHeight: number,
 ): void {
     const posAttr = geometry.attributes.position as THREE.BufferAttribute;
+    const normAttr = geometry.attributes.normal as THREE.BufferAttribute;
     const uvAttr = geometry.attributes.uv as THREE.BufferAttribute;
+
     const posArr = posAttr.array as Float32Array;
+    const normArr = normAttr.array as Float32Array;
     const uvArr = uvAttr.array as Float32Array;
     const count = posAttr.count;
 
-    const scaleX = THREE.MathUtils.lerp(planeWidth / (Math.PI * 2), SPHERE_RADIUS, t);
-    const scaleY = THREE.MathUtils.lerp(planeHeight / Math.PI, SPHERE_RADIUS, t);
+    const wavePulse = Math.sin(t * Math.PI);
 
     for (let i = 0; i < count; i++) {
         const u = uvArr[i * 2];
@@ -177,22 +247,41 @@ function updateMorphedGeometry(
         const lambda = (u - 0.5) * Math.PI * 2;
         const psi = (v - 0.5) * Math.PI;
 
-        const lt = lambda * t;
-        const pt = psi * t;
-        const cosPt = Math.cos(pt);
+        const { tx, ty } = getStagedMorphFactors(u, v, t);
 
-        posArr[i * 3]     = cosPt * lambda * sinc(lt) * scaleX;
+        const lt = lambda * tx;
+        const pt = psi * ty;
+        const cosPt = Math.cos(pt);
+        const sinPt = Math.sin(pt);
+
+        const scaleX = THREE.MathUtils.lerp(planeWidth / (Math.PI * 2), SPHERE_RADIUS, tx);
+        const scaleY = THREE.MathUtils.lerp(planeHeight / Math.PI, SPHERE_RADIUS, ty);
+
+        const ripple = Math.sin(lambda * 2.0 + t * Math.PI * 2.0) * 0.035 * wavePulse;
+
+        posArr[i * 3] = cosPt * lambda * sinc(lt) * scaleX;
         posArr[i * 3 + 1] = psi * sinc(pt) * scaleY;
-        posArr[i * 3 + 2] = SPHERE_RADIUS * (cosPt * Math.cos(lt) - 1.0 + t);
+        posArr[i * 3 + 2] = SPHERE_RADIUS * (cosPt * Math.cos(lt) - 1.0 + tx) + ripple;
+
+        // Analytical outward unit normal for smooth Fresnel lighting
+        const nx = cosPt * Math.sin(lt);
+        const ny = sinPt;
+        const nz = cosPt * Math.cos(lt);
+        const invLen = 1.0 / Math.hypot(nx, ny, nz);
+
+        normArr[i * 3] = nx * invLen;
+        normArr[i * 3 + 1] = ny * invLen;
+        normArr[i * 3 + 2] = nz * invLen;
     }
 
     posAttr.needsUpdate = true;
+    normAttr.needsUpdate = true;
     geometry.computeBoundingSphere();
     geometry.computeBoundingBox();
 }
 
 /* ------------------------------------------------------------------ */
-/*  Mars Scene (Morphing Mesh + Marker + Camera Controller)            */
+/*  Mars Scene (Morphing Mesh + Marker + Camera Controller)           */
 /* ------------------------------------------------------------------ */
 
 interface MarsSceneProps {
@@ -217,6 +306,8 @@ function MarsScene({
     const { camera, size } = useThree();
     const materialRef = useRef<THREE.ShaderMaterial>(null);
     const markerGroupRef = useRef<THREE.Group>(null);
+    const innerRingRef = useRef<THREE.Mesh>(null);
+    const outerRingRef = useRef<THREE.Mesh>(null);
     const controlsRef = useRef<ComponentRef<typeof OrbitControls>>(null);
 
     const [coordinate, setCoordinate] = useState<coordinate | null>(null);
@@ -276,13 +367,16 @@ function MarsScene({
             const { u, v } = coordinateToUv(coord);
             evaluateSurface(u, v, t, width, height, tmpPos, tmpNormal);
 
-            tmpPos.addScaledVector(tmpNormal, MARKER_SURFACE_OFFSET);
+            // Hover the reticle slightly above the surface mid-transition ("orbital lock-on")
+            const transitionLift = Math.sin(t * Math.PI) * 0.08;
+            tmpPos.addScaledVector(tmpNormal, MARKER_SURFACE_OFFSET + transitionLift);
             group.position.copy(tmpPos);
             group.quaternion.setFromUnitVectors(zAxis, tmpNormal);
 
-            // Slightly larger reticle on flat 2D map to match original 2D marker proportions
-            const markerScale = THREE.MathUtils.lerp(1.45, 1.0, t);
-            group.scale.setScalar(markerScale);
+            // Slightly larger reticle on flat 2D map + subtle scale pop mid-flight
+            const baseScale = THREE.MathUtils.lerp(1.45, 1.0, t);
+            const popScale = 1.0 + Math.sin(t * Math.PI) * 0.35;
+            group.scale.setScalar(baseScale * popScale);
         },
         [tmpPos, tmpNormal, zAxis],
     );
@@ -344,6 +438,9 @@ function MarsScene({
             overlayMap: { value: blankTexture },
             overlayOpacity: { value: overlayOpacity },
             hasOverlay: { value: false },
+            uMorph: { value: viewMode === '3d' ? 1.0 : 0.0 },
+            uTransitionPulse: { value: 0.0 },
+            uScanlinePos: { value: 0.0 },
         }),
         // eslint-disable-next-line react-hooks/exhaustive-deps
         [marsTexture, blankTexture],
@@ -405,7 +502,12 @@ function MarsScene({
                 );
                 endSphericalRef.current.set(CAMERA_Z, targetPhi, targetTheta);
             } else {
-                endSphericalRef.current.copy(saved3DSphericalRef.current);
+                // Add a gentle minimum spin if starting from 0 so the fold feels dynamic
+                const saved = saved3DSphericalRef.current;
+                if (Math.abs(saved.theta) < 0.05) {
+                    saved.theta = 0.45;
+                }
+                endSphericalRef.current.copy(saved);
             }
         }
     }, [viewMode, camera, coordinate]);
@@ -428,9 +530,20 @@ function MarsScene({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [geometry, planeDims.width, planeDims.height]);
 
-    /* ---------- Per-Frame Unfold & Camera Animation ---------- */
+    /* ---------- Per-Frame Unfold, Shader & Reticle Animation ---------- */
 
-    useFrame((_, delta) => {
+    useFrame((state, delta) => {
+        // Continuous counter-rotation for the hexagonal targeting reticle
+        if (coordinate !== null) {
+            const elapsed = state.clock.elapsedTime;
+            if (innerRingRef.current) {
+                innerRingRef.current.rotation.z = elapsed * 0.6;
+            }
+            if (outerRingRef.current) {
+                outerRingRef.current.rotation.z = Math.PI / 6 - elapsed * 0.4;
+            }
+        }
+
         if (animProgressRef.current >= 1) return;
 
         const nextProgress = Math.min(
@@ -447,7 +560,17 @@ function MarsScene({
         );
         morphRef.current = currentMorph;
 
-        // 1. Deform mesh between flat plane and sphere
+        // Bell-curve pulse (0 -> 1 -> 0) peaking halfway through the transition
+        const transitionPulse = Math.sin(nextProgress * Math.PI);
+
+        // Update shader uniforms for hologram grid, scanline, and 3D Fresnel glow
+        if (materialRef.current) {
+            materialRef.current.uniforms.uMorph.value = currentMorph;
+            materialRef.current.uniforms.uTransitionPulse.value = transitionPulse;
+            materialRef.current.uniforms.uScanlinePos.value = ease;
+        }
+
+        // 1. Deform mesh with staged cylinder-to-sphere wave
         updateMorphedGeometry(
             geometry,
             currentMorph,
@@ -463,12 +586,16 @@ function MarsScene({
             planeDims.height,
         );
 
-        // 3. Interpolate camera along a spherical arc around the origin
-        const r = THREE.MathUtils.lerp(
+        // 3. Interpolate camera along a spherical arc with a cinematic pullback dolly
+        const baseRadius = THREE.MathUtils.lerp(
             startSphericalRef.current.radius,
             endSphericalRef.current.radius,
             ease,
         );
+        // Pull camera back slightly mid-transition so the curling edges have room
+        const dollyPullback = transitionPulse * 0.38;
+        const r = baseRadius + dollyPullback;
+
         const phi = THREE.MathUtils.lerp(
             startSphericalRef.current.phi,
             endSphericalRef.current.phi,
@@ -481,7 +608,12 @@ function MarsScene({
         );
 
         camera.position.setFromSphericalCoords(r, phi, theta);
-        camera.up.set(0, 1, 0);
+
+        // Subtle banking roll ("Dutch angle") during transition, settling to (0, 1, 0)
+        const bankDirection = targetMorphRef.current > animStartMorphRef.current ? 1 : -1;
+        const bankAngle = transitionPulse * 0.075 * bankDirection;
+        camera.up.set(Math.sin(bankAngle), Math.cos(bankAngle), 0).normalize();
+
         camera.lookAt(0, 0, 0);
         camera.updateProjectionMatrix();
 
@@ -491,6 +623,10 @@ function MarsScene({
         }
 
         if (nextProgress >= 1) {
+            camera.up.set(0, 1, 0);
+            if (materialRef.current) {
+                materialRef.current.uniforms.uTransitionPulse.value = 0.0;
+            }
             setIsTransitioning(false);
         }
     });
@@ -584,8 +720,8 @@ function MarsScene({
 
                 {/* Hexagonal Targeting Reticle (shared across 2D & 3D) */}
                 <group ref={markerGroupRef} visible={coordinate !== null}>
-                    {/* Inner hexagonal ring (thick) */}
-                    <mesh>
+                    {/* Inner hexagonal ring (thick, slowly rotating) */}
+                    <mesh ref={innerRingRef}>
                         <ringGeometry args={[0.028, 0.044, 6]} />
                         <meshBasicMaterial
                             color="#ffffff"
@@ -597,8 +733,8 @@ function MarsScene({
                         />
                     </mesh>
 
-                    {/* Outer hexagonal ring (thin, rotated 30°) */}
-                    <mesh rotation={[0, 0, Math.PI / 6]}>
+                    {/* Outer hexagonal ring (thin, counter-rotating) */}
+                    <mesh ref={outerRingRef} rotation={[0, 0, Math.PI / 6]}>
                         <ringGeometry args={[0.054, 0.06, 6]} />
                         <meshBasicMaterial
                             color="#ffffff"
@@ -640,7 +776,7 @@ function MarsScene({
 }
 
 /* ------------------------------------------------------------------ */
-/*  GlobeMap (Public Wrapper)                                          */
+/*  GlobeMap (Public Wrapper)                                         */
 /* ------------------------------------------------------------------ */
 
 interface GlobeMapProps {
@@ -667,15 +803,18 @@ export default function GlobeMap({
     return (
         <div
             className={`GlobeMap mode-${viewMode}`}
+            style={{ backgroundColor: 'var(--color-bg)' }}
             onPointerDown={handleInteract}
         >
             <Canvas
                 camera={{ position: [0, 0.2, CAMERA_Z], fov: CAMERA_FOV }}
-                gl={{ antialias: true }}
+                gl={{ antialias: true, alpha: true }}
+                onCreated={({ gl, scene }) => {
+                    scene.background = null;
+                    gl.setClearColor(0x000000, 0);
+                }}
                 onPointerDown={handleInteract}
             >
-                <color attach="background" args={['#090b0f']} />
-
                 <Suspense fallback={null}>
                     <MarsScene
                         viewMode={viewMode}

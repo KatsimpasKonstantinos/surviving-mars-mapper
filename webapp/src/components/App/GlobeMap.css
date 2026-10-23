@@ -3,10 +3,14 @@
     height: 100%;
     border-radius: inherit;
     overflow: hidden;
-    background-color: #090b0f;
+    background-color: var(--color-bg);
     position: relative;
     user-select: none;
     touch-action: none;
+}
+
+.GlobeMap canvas {
+    background: transparent !important;
 }
 
 .GlobeMap.mode-3d {
