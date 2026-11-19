@@ -1,30 +1,31 @@
 export type coordinate = {
-    lat: number;
-    long: number;
+  lat: number;
+  long: number;
 };
 
-export type coordinateString = `${number}$${'N' | 'S'}${number}{'E' | 'W'}`;
+export type coordinateString = `${number}${'N' | 'S'}${number}${'E' | 'W'}`;
 
 export interface MapDataEntry {
-    SiteName?: string;
-    Altitude?: number | string;
-    Temperature?: number | string;
-    Topography?: string;
-    Difficulty?: number | string;
+  SiteName: string;
+  Altitude: number;
+  Temperature: number;
+  Topography: string;
+  Difficulty: number;
 
-    DustDevilsBars?: number | string;
-    DustStormBars?: number | string;
-    MeteorBars?: number | string;
-    ColdWaveBars?: number | string;
+  DustDevilsBars: number;
+  DustStormBars: number;
+  MeteorBars: number;
+  ColdWaveBars: number;
 
-    MetalsBars?: number | string;
-    ConcreteBars?: number | string;
-    WaterBars?: number | string;
+  MetalsBars: number;
+  ConcreteBars: number;
+  WaterBars: number;
 
-    MapTemplateID?: string;
+  MapTemplateID: string;
 
-    Seed?: string;
-    xxhashShuffleBreakThroughTech?: string;
+  xxhashShuffleBreakThroughTech: string;
+  /** The three breakthroughs offered at the first choice (precomputed from the seed). */
+  FirstBreakthroughs: string[];
 }
 
 export type MapData = Record<string, MapDataEntry>;

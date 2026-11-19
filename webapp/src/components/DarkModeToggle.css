@@ -1,82 +1,76 @@
-.DarkModeToggle {
-    font-size: 17px;
+@layer components {
+  .DarkModeToggle {
     position: relative;
     display: inline-block;
-    width: 5rem;
+    inline-size: 5rem;
+    border-radius: 999px;
+    font-size: 17px;
     cursor: pointer;
     user-select: none;
 
-}
+    /* The checkbox is visually hidden, so show its keyboard focus on the label. */
+    &:has(input:focus-visible) {
+      outline: 2px solid var(--color-secondary);
+      outline-offset: 3px;
+    }
 
-.DarkModeToggle input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-    position: absolute;
-}
+    input {
+      position: absolute;
+      inline-size: 0;
+      block-size: 0;
+      opacity: 0;
+    }
 
-.DarkModeToggle svg {
-    display: block;
-    width: 100%;
-    height: auto;
-}
+    svg {
+      inline-size: 100%;
+      block-size: auto;
+    }
 
-.DarkModeToggle .toggle-container,
-.DarkModeToggle .toggle-patches,
-.DarkModeToggle .toggle-stars,
-.DarkModeToggle .toggle-button,
-.DarkModeToggle .toggle-sun,
-.DarkModeToggle .toggle-moon,
-.DarkModeToggle .toggle-cloud,
-.DarkModeToggle .darkmode-hole,
-.DarkModeToggle .darkmode-cover {
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
+    :is(
+      .toggle-container,
+      .toggle-patches,
+      .toggle-stars,
+      .toggle-button,
+      .toggle-sun,
+      .toggle-moon,
+      .toggle-cloud,
+      .darkmode-hole,
+      .darkmode-cover
+    ) {
+      transition-property: opacity, translate, fill, fill-opacity;
+      transition-duration: 0.25s;
+      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
 
-.DarkModeToggle .toggle-sun {
-    opacity: 0;
-}
+    :is(.toggle-sun, .toggle-cloud) {
+      opacity: 0;
+    }
 
-.DarkModeToggle .toggle-moon {
-    opacity: 1;
-}
+    :is(.toggle-moon, .toggle-stars) {
+      opacity: 1;
+    }
 
-.DarkModeToggle .toggle-cloud {
-    opacity: 0;
-}
+    .darkmode-cover {
+      fill-opacity: 0.8;
+    }
 
-.DarkModeToggle .toggle-stars {
-    opacity: 1;
-}
+    &:hover .darkmode-cover {
+      fill-opacity: 0.3;
+    }
 
-.DarkModeToggle input:checked+svg .toggle-button {
-    transform: translate(50px, 0);
-}
+    /* Checked = light mode */
+    input:checked + svg {
+      :is(.toggle-button, .darkmode-hole) {
+        translate: 50px 0;
+      }
 
-.DarkModeToggle input:checked+svg .darkmode-hole {
-    transform: translateX(50px);
-}
+      :is(.toggle-sun, .toggle-cloud) {
+        opacity: 1;
+      }
 
-.DarkModeToggle input:checked+svg .toggle-sun {
-    opacity: 1;
-}
-
-.DarkModeToggle input:checked+svg .toggle-moon {
-    opacity: 0;
-}
-
-.DarkModeToggle input:checked+svg .toggle-cloud {
-    opacity: 1;
-}
-
-.DarkModeToggle input:checked+svg .toggle-stars {
-    opacity: 0;
-}
-
-.DarkModeToggle .darkmode-cover {
-    fill-opacity: 0.8;
-}
-
-.DarkModeToggle:hover .darkmode-cover {
-    fill-opacity: 0.3;
+      :is(.toggle-moon, .toggle-stars) {
+        opacity: 0;
+      }
+    }
+  }
 }

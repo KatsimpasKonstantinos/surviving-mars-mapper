@@ -1,112 +1,296 @@
-:root {
-  --color-text: rgb(241, 245, 249);
-  --color-bg: rgba(9, 11, 15, 1);
-  --color-primary: rgb(220, 38, 38);
-  --color-secondary: rgb(31, 116, 180);
-  --color-accent: rgb(255, 255, 0);
-  --color-shadow: rgb(0, 0, 0);
-  --color-text-secondary: rgb(146, 154, 161);
+/*
+ * Layer order: later layers win regardless of selector specificity.
+ * Third-party CSS injected at runtime (AG Grid's theme) stays unlayered and
+ * therefore above all of these.
+ */
+@layer reset, base, components, utilities;
 
-  --font: libel-suit;
-  --font-heading: scheme;
-  --font-subheading: gnuolane;
-  
-  background-image:
-    linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.6)),
-    url('./assets/GP_Green_Mars_Loading_Screen_01_Worlds.webp');
+/* ---------------------------------------------------------------- fonts */
 
+@font-face {
+  font-family: 'gnuolane';
+  src: url('./assets/fonts/gnuolane-rg.woff2') format('woff2');
+  font-display: swap;
+}
 
-  background-size: cover;
+@font-face {
+  font-family: 'libel-suit';
+  src: url('./assets/fonts/libel-suit-bk.woff2') format('woff2');
+  font-display: swap;
+}
 
-  font: 18px/145% var(--font);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--color-text);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@font-face {
+  font-family: 'scheme';
+  src: url('./assets/fonts/scheme-bk.woff2') format('woff2');
+  font-display: swap;
+}
 
-  --transition-duration: 0.2s;
-  --transition-timing: ease;
+/* ---------------------------------------------------------------- reset */
 
-  transition: background-color var(--transition-duration) var(--transition-timing), color var(--transition-duration) var(--transition-timing), border-color var(--transition-duration) var(--transition-timing);
+@layer reset {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
 
-  animation: removeBlur 1s ease forwards;
+  body {
+    margin: 0;
+  }
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
+  img,
+  svg,
+  canvas {
+    display: block;
+    max-inline-size: 100%;
+  }
+
+  button,
+  input,
+  select {
+    font: inherit;
   }
 }
 
-@keyframes removeBlur {
+/* ---------------------------------------------------------------- tokens + base */
+
+@layer base {
+  :root {
+    /* Dark is the default; `.light` (set from the theme toggle) switches every token at once. */
+    color-scheme: dark;
+
+    --color-text: light-dark(rgb(15 23 42), rgb(241 245 249));
+    --color-text-secondary: light-dark(rgb(94 96 100), rgb(146 154 161));
+    --color-bg: light-dark(rgb(248 250 252), rgb(9 11 15));
+    --color-shadow: light-dark(rgb(100 116 139 / 0.15), rgb(0 0 0));
+    --color-primary: rgb(220 38 38);
+    --color-secondary: rgb(31 116 180);
+    --color-accent: rgb(255 255 0);
+
+    /* Neutral surfaces for cards and controls (brand colours stay above) */
+    --surface: light-dark(rgb(255 255 255 / 0.8), rgb(16 19 25 / 0.74));
+    --surface-solid: light-dark(rgb(255 255 255), rgb(16 19 25));
+    --border: light-dark(rgb(15 23 42 / 0.1), rgb(255 255 255 / 0.09));
+    --border-strong: light-dark(rgb(15 23 42 / 0.2), rgb(255 255 255 / 0.18));
+    --hover: light-dark(rgb(15 23 42 / 0.05), rgb(255 255 255 / 0.06));
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.12), 0 12px 32px -16px var(--color-shadow);
+
+    --font: libel-suit, system-ui, sans-serif;
+    --font-heading: scheme, system-ui, sans-serif;
+    --font-subheading: gnuolane, system-ui, sans-serif;
+
+    --transition-duration: 0.2s;
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    /* Fluid base size: 16px on small screens up to 18px on wide ones. */
+    font: clamp(1rem, 0.75rem + 0.4vw, 1.125rem) / 1.45 var(--font);
+    letter-spacing: 0.01em;
+    color: var(--color-text);
+    background-color: var(--color-bg);
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Reserve the scrollbar so pages that grow (e.g. the breakthrough tree) don't shift sideways. */
+    scrollbar-gutter: stable;
+
+    animation: remove-blur 1s ease forwards;
+
+    &.light {
+      color-scheme: light;
+    }
+  }
+
+  /*
+   * Page background on a fixed, viewport-sized layer: it keeps the same framing
+   * however long the page gets (a background on the root would be scaled up to
+   * cover the whole document height).
+   */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      linear-gradient(rgb(0 0 0 / 0.8), rgb(0 0 0 / 0.6)),
+      url('./assets/GP_Green_Mars_Loading_Screen_01_Worlds.webp') center / cover;
+  }
+
+  :root.light body::before {
+    background:
+      linear-gradient(rgb(255 255 255 / 0.7), rgb(255 255 255 / 0.2)),
+      url('./assets/004.webp') center / cover;
+  }
+
+  #root {
+    margin-inline: auto;
+    text-align: center;
+    min-block-size: 100svh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-secondary);
+    outline-offset: 2px;
+  }
+
+  code {
+    font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  }
+}
+
+@keyframes remove-blur {
   from {
     filter: blur(100px);
   }
 
+  /* `none` rather than blur(0): a lingering filter on the root costs compositing on every frame */
   to {
-    filter: blur(0px);
+    filter: none;
   }
 }
 
-.light {
-  --color-text: rgb(15, 23, 42);
-  --color-bg: rgb(248, 250, 252);
-  --color-shadow: rgba(100, 116, 139, 0.15);
-  --color-text-secondary: rgb(94, 96, 100);
+/* ---------------------------------------------------------------- app shell */
 
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.2)),
-    url('./assets/004.webp');
+@layer components {
+  .app-content {
+    inline-size: 100%;
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
 
+  /* Full width explicitly: pages must not size themselves from their content
+     (container-query elements like the map report no intrinsic width). */
+  .page-enter {
+    inline-size: 100%;
+    animation: page-enter 0.15s ease-out;
+  }
+
+  .data-error {
+    margin-block-start: 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* ---- Card: the one container style used on every page ---- */
+  .card {
+    background: var(--surface);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+  }
+
+  /* Small heading at the top of a card */
+  .card-label {
+    margin: 0 0 12px;
+    color: var(--color-text-secondary);
+    font-family: var(--font-subheading);
+    font-size: 0.85rem;
+    font-weight: normal;
+    letter-spacing: 0.12em;
+    line-height: 1.3;
+    text-transform: uppercase;
+  }
+
+  /* Neutral button; red is reserved for hover/active */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4em;
+    padding: 6px 14px;
+    background: transparent;
+    color: var(--color-text);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-subheading);
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition-property: background-color, border-color, color;
+    transition-duration: var(--transition-duration);
+
+    &:hover:not(:disabled) {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: white;
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+  }
+
+  .panel-link {
+    color: var(--color-secondary);
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
 }
 
-#root {
-  margin: 0 auto;
-  text-align: center;
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-  align-items: center;
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    translate: 20px 0;
+  }
 }
 
-body {
-  margin: 0;
+/* ---------------------------------------------------------------- utilities */
+
+@layer utilities {
+  .visually-hidden {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
+/* ---------------------------------------------------------------- motion */
 
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    animation: none;
+  }
 
-@font-face {
-  font-family: 'gnuolane'; 
-  
-  src: url('./assets/fonts/gnuolane\ rg.ttf') format('truetype');
-  
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'libel-suit'; 
-  
-  src: url('./assets/fonts/libel-suit-bk.ttf') format('truetype');
-  
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'scheme'; 
-  
-  src: url('./assets/fonts/scheme_bk.ttf') format('truetype');
-  
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

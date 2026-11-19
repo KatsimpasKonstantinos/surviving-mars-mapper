@@ -1,201 +1,328 @@
-@import url('https://fonts.googleapis.com/css2?family=Teko:wght@300;400;500&family=Barlow+Condensed:wght@400;600&display=swap');
-
-.Home {
+@layer components {
+  .Home {
+    display: flex;
+    flex-direction: column;
+    inline-size: 100%;
     overflow: hidden;
-    display: flex;
-    flex-direction: column;
     font-size: 1rem;
-    width: 100%;
-}
 
-
-.Home .main-container {
-    flex-grow: 1;
-    position: relative;
-    padding-right: 40px;
-    padding-left: 40px;
-    padding-top: 20px;
-    padding-bottom: 20px;
-    gap: 60px;
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
-}
-
-.Home .info-panel {
-    width: 25vw;
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
-}
-
-.Home .map-section {
-    flex-grow: 1;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    max-width: 1600px;
-}
-
-.Home .location-card {
-    background: linear-gradient(90deg,
-            rgb(from var(--color-secondary) r g b / 0.2) 0%,
-            rgb(from var(--color-secondary) r g b / 0) 100%);
-    padding: 20px;
-    padding-top: 0;
-    border-left: 3px solid var(--color-secondary);
-}
-
-.Home .location-card h1 {
-    line-height: 1;
-    letter-spacing: 1px;
-    margin-bottom: 5px;
-    
-}
-
-.Home .location-card .hasColonyName {
-    color: var(--color-secondary);
-}
-
-.Home .location-card h2 {
-
-    font-size: 1.3em;
-    margin-bottom: 15px;
-    font-weight: 600;
-}
-
-.Home .location-card input {
-    font-family: var(--font-subheading);
-
-}
-
-.Home .stats-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    row-gap: 5px;
-    font-size: 1.1em;
-}
-
-.Home .stats-grid .label {
-    color: var(--color-text-secondary);
-}
-
-
-.Home .analysis-section {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    border-left: 3px solid var(--color-secondary);
-    background: linear-gradient(90deg,
-            rgb(from var(--color-secondary) r g b / 0.2) 0%,
-            rgb(from var(--color-secondary) r g b / 0) 100%);
-    padding: 20px;
-    padding-top: 0;
-    margin-top: 10px;
-}
-
-.Home .analysis-column h3 {
-    font-family: var(--font-subheading);
-    font-size: 1.2em;
-    margin-bottom: 15px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-}
-
-.Home .analysis-row {
-    display: flex;
-    align-items: center;
-    margin-bottom: 8px;
-}
-
-.Home .analysis-name {
-    font-size: 1.1em;
-    margin-left: 15px;
-}
-
-.Home .meter-container {
-    display: flex;
-    gap: 3px;
-}
-
-.Home .meter-box {
-    width: 16px;
-    height: 16px;
-    border: 1px solid var(--color-text-secondary);
-    border-radius: 2px;
-    transform: skewX(-30deg);
-}
-
-.Home .meter-box.filled-threat {
-    background-color: var(--color-accent);
-}
-
-.Home .meter-box.filled-resource {
-    background-color: var(--color-accent);
-}
-
-.Home .coordinate-input {
-    background-color: var(--color-background-dark);
-    border: 1px solid var(--color-text-secondary);
-    color: var(--color-text-primary);
-    font-size: 1.2em;
-    padding: 5px 10px;
-    margin-right: 10px;
-    border-radius: 3px;
-    width: 250px;
-}
-
-.Home .coordinate-input::placeholder {
-    color: var(--color-text-secondary);
-    opacity: 0.7;
-}
-
-.Home .coordinate-input:focus {
-    outline: none;
-    border-color: var(--color-secondary);
-    box-shadow: 0 0 0 2px rgba(var(--color-secondary-rgb), 0.3);
-}
-
-.Home .map-preview {
-    background: linear-gradient(90deg,
-            rgb(from var(--color-secondary) r g b / 0.2) 0%,
-            rgb(from var(--color-secondary) r g b / 0) 100%);
-    margin-top: 10px;
-    border-left: 3px solid var(--color-secondary);
-}
-
-.Home .map-preview img {
-    width: 100%;
-    max-width: 90vw;
-    height: auto;
-    display: block;
-}
-
-@media (max-width: 1200px) {
-    .Home .main-container {
-        flex-direction: column;
-        padding: 20px;
-        gap: 30px;
+    .main-container {
+      position: relative;
+      display: flex;
+      align-items: flex-start;
+      flex-grow: 1;
+      gap: 24px;
+      /* Explicit width: auto margins would otherwise shrink it to its content */
+      inline-size: 100%;
+      max-inline-size: 1600px;
+      margin-inline: auto;
+      padding: 24px 32px;
     }
 
-    .Home .info-panel {
-        width: 100%;
+    .info-panel {
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      gap: 12px;
+      /* 400px fits threats and resources side by side without overflowing */
+      inline-size: max(25vw, 400px);
+      max-inline-size: 440px;
+      text-align: start;
     }
 
-    .Home .map-section {
-        width: 100%;
-        margin-top: 10px;
+    .map-section {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      flex-grow: 1;
+      min-inline-size: 0;
     }
 
-    .Home .coordinate-input {
-        width: 100%;
-        max-width: 250px;
+    .card {
+      padding: 16px 20px;
     }
-}
 
-@media (max-width: 600px) {
-    .Home .analysis-section {
+    /* Label row with an action on the right (e.g. "Full tree →") */
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      margin-block-end: 12px;
+
+      .card-label {
+        margin: 0;
+      }
+    }
+
+    /* ---- Location card ---- */
+    .location-card {
+      /* Above the following cards, so the enlarged thumbnail can overlap them */
+      position: relative;
+      z-index: 2;
+
+      .card-label {
+        margin-block-end: 4px;
+      }
+
+      /* Fixed one-line height so switching between sites never moves the layout. */
+      h1 {
+        block-size: 2.4rem;
+        margin: 0;
+        font-family: var(--font-heading);
+        font-size: 2rem;
+        line-height: 2.4rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        &.long-name {
+          font-size: 1.5rem;
+        }
+
+        &.hasColonyName {
+          color: var(--color-secondary);
+        }
+      }
+    }
+
+    .location-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-block-end: 12px;
+    }
+
+    .location-title {
+      flex: 1;
+      min-inline-size: 0;
+    }
+
+    /* Small map template preview; grows on hover so the layout is still readable */
+    .map-thumb {
+      flex-shrink: 0;
+      inline-size: 112px;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      transform-origin: top right;
+      transition:
+        scale 0.2s ease,
+        box-shadow 0.2s ease;
+
+      &:hover {
+        position: relative;
+        z-index: 1;
+        scale: 2.6;
+        box-shadow: var(--shadow-card);
+      }
+    }
+
+    .coordinate-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 2px;
+      margin-block-end: 12px;
+      font-size: 1.3em;
+      font-weight: 600;
+
+      .CoordinateInput {
+        margin-inline-end: 6px;
+      }
+
+      .Clipboard-btn {
+        margin-block-start: 4px;
+      }
+    }
+
+    /* 2×2 readout: small label above the value, hairline between the rows */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 16px;
+      margin: 0;
+      border-block-start: 1px solid var(--border);
+    }
+
+    .stat {
+      padding-block: 8px;
+
+      &:nth-child(-n + 2) {
+        border-block-end: 1px solid var(--border);
+      }
+
+      dt {
+        color: var(--color-text-secondary);
+        font-size: 0.85em;
+      }
+
+      dd {
+        margin: 0;
+        font-size: 1.15em;
+        line-height: 1.25;
+        font-variant-numeric: tabular-nums;
+      }
+    }
+
+    /* ---- Loading / error state inside the card ---- */
+    .panel-loading {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-block-end: 14px;
+      color: var(--color-text-secondary);
+      font-size: 0.9em;
+    }
+
+    .panel-loading-bar {
+      block-size: 4px;
+      inline-size: 100%;
+      background: var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+
+      > div {
+        block-size: 100%;
+        background: var(--color-secondary);
+        transition: width 0.2s ease-out;
+      }
+    }
+
+    .panel-error {
+      margin: 0 0 12px;
+      color: var(--color-primary);
+    }
+
+    /* ---- Threats / resources ---- */
+    .analysis-card {
+      container: analysis / inline-size;
+    }
+
+    .analysis-section {
+      display: grid;
+      grid-template-columns: auto auto;
+      justify-content: start;
+      column-gap: 24px;
+    }
+
+    .analysis-row {
+      display: flex;
+      align-items: center;
+      margin-block-end: 6px;
+    }
+
+    .analysis-name {
+      margin-inline-start: 14px;
+      font-size: 1.05em;
+      white-space: nowrap;
+    }
+
+    .meter-container {
+      display: flex;
+      flex-shrink: 0;
+      gap: 3px;
+    }
+
+    .meter-box {
+      inline-size: 18px;
+      block-size: 16px;
+      border: 1px solid var(--border-strong);
+      border-radius: 2px;
+      transform: skewX(-30deg);
+      transition: background-color 0.25s ease;
+
+      &:is(.filled-threat, .filled-resource) {
+        background-color: var(--color-accent);
+        border-color: var(--color-accent);
+      }
+    }
+
+    /* Too narrow for threats and resources side by side */
+    @container analysis (width < 345px) {
+      .analysis-section {
         grid-template-columns: 1fr;
+        row-gap: 8px;
+      }
     }
+
+    /* ---- First breakthrough choice ---- */
+    .breakthrough-preview {
+      ul {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      li {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        min-inline-size: 0;
+        font-size: 0.85em;
+        line-height: 1.2;
+        text-align: center;
+      }
+
+      /* Always reserve exactly two lines so long names don't resize the card. */
+      li span {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        block-size: 2.4em;
+        inline-size: 100%;
+        overflow: hidden;
+        overflow-wrap: anywhere;
+      }
+
+      img {
+        inline-size: 64px;
+        block-size: 64px;
+        object-fit: contain;
+      }
+    }
+
+    .panel-link {
+      color: var(--color-secondary);
+      font-size: 0.95em;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+
+    @media (width <= 1200px) {
+      .main-container {
+        flex-direction: column;
+        gap: 16px;
+        padding: 20px;
+      }
+
+      /* Tablet widths: cards side by side where they fit */
+      .info-panel {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+        align-items: start;
+        inline-size: 100%;
+        max-inline-size: none;
+      }
+
+      /* Show the map first on small screens: it is how a site gets picked. */
+      .map-section {
+        order: -1;
+        inline-size: 100%;
+      }
+    }
+
+    @media (width <= 600px) {
+      .main-container {
+        padding: 12px;
+      }
+    }
+  }
 }

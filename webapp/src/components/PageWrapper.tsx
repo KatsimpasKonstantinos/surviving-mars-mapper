@@ -1,19 +1,10 @@
 import type { ReactNode } from 'react';
-import { motion } from 'motion/react';
 
 type PageWrapperProps = {
-    children: ReactNode;
+  children: ReactNode;
 };
 
+/** Fades/slides a page in on navigation (see .page-enter in index.css). */
 export default function PageWrapper({ children }: PageWrapperProps) {
-    return (
-        <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.1 }}
-        >
-            {children}
-        </motion.div>
-    );
+  return <div className="page-enter">{children}</div>;
 }

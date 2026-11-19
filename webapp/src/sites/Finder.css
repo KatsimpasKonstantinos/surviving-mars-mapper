@@ -1,78 +1,167 @@
-.Finder {
-    height: 75vh;
-    width: 100%;
-    margin-top: 20px;
+@layer components {
+  .Finder {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    gap: 12px;
+    inline-size: 100%;
+    block-size: calc(100svh - 200px);
+    min-block-size: 420px;
+    margin-block-start: 20px;
+
+    :is(.finder-toolbar, .container) {
+      inline-size: calc(100% - 48px);
+      max-inline-size: 2200px;
+    }
+
+    .finder-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px 16px;
+      font-size: 0.95rem;
+      text-align: start;
+    }
+
+    .finder-input {
+      inline-size: 240px;
+      max-inline-size: 100%;
+      padding: 6px 10px;
+      background-color: var(--surface);
+      color: var(--color-text);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      font-size: 0.95rem;
+      transition: border-color var(--transition-duration) ease;
+
+      &:focus {
+        outline: none;
+        border-color: var(--color-secondary);
+      }
+    }
+
+    .finder-reset {
+      padding: 6px 12px;
+      background: transparent;
+      color: var(--color-text);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition-property: background-color, border-color, color;
+      transition-duration: var(--transition-duration);
+
+      &:hover {
+        background-color: var(--color-primary);
+        border-color: var(--color-primary);
+        color: white;
+      }
+    }
+
+    .finder-hint {
+      color: var(--color-text-secondary);
+      font-size: 0.85rem;
+    }
+
+    .finder-count {
+      margin-inline-start: auto;
+      color: var(--color-text-secondary);
+      font-variant-numeric: tabular-nums;
+
+      strong {
+        color: var(--color-text);
+      }
+    }
+
+    .container {
+      flex: 1;
+      min-block-size: 0;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-strong) transparent;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-card);
+    }
+
+    /* ---- Cell renderers ---- */
+    .coordinate-cell {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      block-size: 100%;
+
+      > span {
+        font-weight: bold;
+        font-variant-numeric: tabular-nums;
+      }
+    }
+
+    .show-map-btn {
+      padding-inline: 6px;
+      color: var(--color-text-secondary);
+      border: 1px solid var(--border-strong);
+      border-radius: 999px;
+      font-size: 0.85em;
+      line-height: 1.5;
+
+      &:hover {
+        color: var(--color-secondary);
+      }
+    }
+
+    .breakthrough-cell {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      block-size: 100%;
+
+      img {
+        inline-size: 26px;
+        block-size: 26px;
+        object-fit: contain;
+      }
+    }
+
+    @media (width <= 700px) {
+      :is(.finder-toolbar, .container) {
+        inline-size: calc(100% - 24px);
+      }
+
+      .finder-hint {
+        display: none;
+      }
+
+      .finder-count {
+        margin-inline-start: 0;
+        inline-size: 100%;
+      }
+    }
+  }
+
+  /* Map template preview, rendered by the grid's tooltip layer */
+  .map-preview-tooltip {
+    inline-size: 220px;
+    background: var(--surface-solid);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+    pointer-events: none;
+
+    img {
+      inline-size: 100%;
+      block-size: auto;
+    }
+
+    span {
+      display: block;
+      padding: 4px 8px;
+      color: var(--color-text-secondary);
+      font-size: 0.8rem;
+    }
+  }
 }
 
-.Finder .container {
-    height: 100%;
-    width: 90%;
-}
-
-.ag-theme-alpine-dark {
-    --ag-background-color: var(--color-bg, #1e1e1e);
-    --ag-even-row-background-color: var(--color-bg, #1e1e1e);
-    --ag-odd-row-background-color: var(--color-bg-alt, var(--color-bg, #252525));
-    --ag-header-background-color: var(--color-bg, #111111);
-    --ag-header-foreground-color: var(--color-text, #ffffff);
-    --ag-header-column-separator-display: none;
-    --ag-data-color: var(--color-text, #dddddd);
-    --ag-selected-row-background-color: var(--color-secondary, rgba(128, 128, 128, 0.25));
-    --ag-row-hover-color: rgba(var(--color-secondary-rgb), 0.1);
-    --ag-menu-background-color: var(--color-bg, #1e1e1e);
-    --ag-control-panel-background-color: var(--color-bg, #1e1e1e);
-    --ag-foreground-color: var(--color-text, #ffffff);
-    font-size: 1rem;
-
-}
-
-.ag-theme-alpine-dark ::-webkit-scrollbar-track {
-    background: var(--color-bg);
-}
-
-.ag-theme-alpine-dark {
-    scrollbar-width: thin;
-    background: var(--color-bg);
-    scrollbar-color: var(--color-text-secondary) var(--color-bg);
-}
-
-.Finder .show-map-btn {
-    text-decoration: none;
-    color: var(--color-text);
-}
-
-.Finder .show-map-btn:hover {
-    color: var(--color-secondary);
-}
-
-.map-id-cell {
-    position: relative;
-    display: flex;
-    align-items: center;
-    height: 100%;
-}
-
-.map-preview-popup {
-    display: none;
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 2px solid var(--color-border, #666666);
-    z-index: 1000;
-    width: 200px;
-}
-
-.map-id-cell:hover .map-preview-popup {
-    display: block;
-}
-
-.map-preview-popup img {
-    width: 100%;
-    height: auto;
-    display: block;
+/* Unlayered on purpose: overrides AG Grid's (unlayered) theme CSS. */
+.Finder .ag-row {
+  cursor: pointer;
 }

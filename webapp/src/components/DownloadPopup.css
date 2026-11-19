@@ -1,72 +1,68 @@
-.download-popup {
+@layer components {
+  .download-popup {
     position: absolute;
-    top: calc(100% + 8px);
-    left: 50%;
-
+    inset-block-start: calc(100% + 10px);
+    inset-inline-end: 0;
+    z-index: 1000;
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 2px;
+    min-inline-size: 220px;
+    padding: 6px;
+    background-color: var(--surface-solid);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+    transform-origin: top right;
+    transition:
+      opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+      translate 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+      scale 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
-    background-color: var(--color-bg);
-    border: 1px solid var(--color-primary);
-    border-radius: 8px;
-    padding: 0.5rem;
-    z-index: 1000;
-    min-width: 220px;
-
-    transform-origin: top center;
-    animation: popupSlideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes popupSlideIn {
-    from {
-        opacity: 0;
-        transform: translateX(-50%) translateY(-10px) scale(0.95);
+    /* Entry animation for the freshly mounted popup */
+    @starting-style {
+      opacity: 0;
+      translate: 0 -8px;
+      scale: 0.97;
     }
 
-    to {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0) scale(1);
+    @media (width <= 1200px) {
+      position: static;
+      margin-block-start: 4px;
+      box-shadow: none;
     }
-}
+  }
 
-.popup-item {
+  .popup-item {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.75rem;
-    text-decoration: none;
+    padding: 0.6rem 0.75rem;
     color: var(--color-text);
-    border-radius: 6px;
-    transition: all 0.2s ease;
-    background-color: transparent;
-}
+    border-radius: var(--radius-sm);
+    transition: background-color var(--transition-duration) ease;
 
-.popup-item:hover {
-    background-color: color-mix(in srgb, var(--color-primary) 15%, transparent);
-}
+    &:hover {
+      background-color: var(--hover);
+    }
+  }
 
-.popup-icon {
-    width: 24px;
-    height: 24px;
-    color: var(--color-primary);
+  .popup-icon {
     flex-shrink: 0;
-}
+    inline-size: 22px;
+    block-size: 22px;
+    color: var(--color-primary);
+  }
 
-.popup-text {
+  .popup-text {
     display: flex;
     flex-direction: column;
     gap: 0.1rem;
-}
+    text-align: start;
+  }
 
-.popup-title {
-    font-weight: 600;
-    font-size: 0.95rem;
-    color: var(--color-text);
-}
-
-.popup-desc {
-    font-size: 0.75rem;
-    opacity: 0.6;
-    color: var(--color-text);
+  .popup-title {
+    font-family: var(--font-subheading);
+    font-size: 1rem;
+  }
 }

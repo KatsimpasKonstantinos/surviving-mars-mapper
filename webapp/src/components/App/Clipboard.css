@@ -1,101 +1,158 @@
-.Clipboard-btn {
-    background: none;
-    border: none;
-    padding: 4px;
-    margin-left: 6px;
-    cursor: pointer;
+@layer components {
+  .Clipboard-btn {
+    --pop: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
     position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: #6b7280;
+    margin-inline-start: 6px;
+    padding: 4px;
+    background: none;
+    border: none;
+    border-radius: 4px;
+    color: var(--color-text-secondary);
     vertical-align: middle;
-    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
+    cursor: pointer;
+    transition:
+      color var(--transition-duration) ease,
+      scale var(--transition-duration) var(--ease-spring),
+      rotate var(--transition-duration) var(--ease-spring);
 
-.Clipboard-btn:hover {
-    color: #374151; 
-    transform: scale(1.15) rotate(5deg); 
-}
+    &:hover:not(:disabled) {
+      color: var(--color-text);
+      scale: 1.15;
+      rotate: 5deg;
+    }
 
-.Clipboard-btn:active {
-    transform: scale(0.9);
-}
+    &:active {
+      scale: 0.9;
+    }
 
-.icon-container {
-    position: relative;
-}
+    &:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
 
-.icon-copy, .icon-check {
+    .icon-container {
+      position: relative;
+    }
+
+    :is(.icon-copy, .icon-check) {
+      position: absolute;
+      inset: 0;
+      transition:
+        opacity 0.4s var(--pop),
+        scale 0.4s var(--pop),
+        rotate 0.4s var(--pop);
+    }
+
+    .icon-check {
+      opacity: 0;
+      scale: 0.5;
+      rotate: -45deg;
+      color: rgb(10 185 112);
+    }
+
+    &.copied {
+      pointer-events: none;
+
+      .icon-copy {
+        opacity: 0;
+        scale: 0.5;
+        rotate: 45deg;
+      }
+
+      .icon-check {
+        opacity: 1;
+        scale: 1;
+        rotate: 0deg;
+
+        path {
+          stroke-dasharray: 30;
+          stroke-dashoffset: 30;
+          animation: draw-check 0.4s ease-out 0.1s forwards;
+        }
+      }
+    }
+  }
+
+  /* ---- Confetti burst on copy ---- */
+  .glitter-container {
     position: absolute;
-    top: 0;
-    left: 0;
-    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); 
-    transform-origin: center;
-}
-
-.icon-copy {
-    opacity: 1;
-    transform: scale(1) rotate(0deg);
-}
-.icon-check {
-    opacity: 0;
-    transform: scale(0.5) rotate(-45deg);
-    color: #0ab970;
-}
-
-.Clipboard-btn.copied {
-    pointer-events: none; 
-}
-
-.Clipboard-btn.copied .icon-copy {
-    opacity: 0;
-    transform: scale(0.5) rotate(45deg);
-}
-
-.Clipboard-btn.copied .icon-check {
-    opacity: 1;
-    transform: scale(1) rotate(0deg);
-}
-
-.Clipboard-btn.copied .icon-check path {
-    stroke-dasharray: 30;
-    stroke-dashoffset: 30;
-    animation: drawCheck 0.4s ease-out forwards;
-    animation-delay: 0.1s;
-}
-
-@keyframes drawCheck {
-    to { stroke-dashoffset: 0; }
-}
-
-.glitter-container {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    pointer-events: none;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
     z-index: 10;
-}
+    pointer-events: none;
+  }
 
-.particle {
+  .particle {
     position: absolute;
-    width: 4px;
-    height: 4px;
+    inline-size: 4px;
+    block-size: 4px;
     border-radius: 50%;
     opacity: 0;
+    animation: pop 0.6s ease-out forwards;
+
+    &:nth-child(3n + 1) {
+      background: var(--color-primary);
+    }
+
+    &:nth-child(3n + 2) {
+      background: var(--color-secondary);
+    }
+
+    &:nth-child(3n) {
+      background: var(--color-accent);
+    }
+  }
+
+  .particle-1 {
+    --tx: -20px;
+    --ty: -20px;
+  }
+  .particle-2 {
+    --tx: 0px;
+    --ty: -25px;
+  }
+  .particle-3 {
+    --tx: 20px;
+    --ty: -20px;
+  }
+  .particle-4 {
+    --tx: -20px;
+    --ty: 20px;
+  }
+  .particle-5 {
+    --tx: 0px;
+    --ty: 25px;
+  }
+  .particle-6 {
+    --tx: 20px;
+    --ty: 20px;
+  }
 }
 
-.particle-1 { background: var(--color-primary); animation: pop 0.6s ease-out forwards; --tx: -20px; --ty: -20px; }
-.particle-2 { background: var(--color-secondary); animation: pop 0.6s ease-out forwards; --tx: 0px; --ty: -25px; }
-.particle-3 { background: var(--color-accent); animation: pop 0.6s ease-out forwards; --tx: 20px; --ty: -20px; }
-.particle-4 { background: var(--color-primary); animation: pop 0.6s ease-out forwards; --tx: -20px; --ty: 20px; }
-.particle-5 { background: var(--color-secondary); animation: pop 0.6s ease-out forwards; --tx: 0px; --ty: 25px; }
-.particle-6 { background: var(--color-accent); animation: pop 0.6s ease-out forwards; --tx: 20px; --ty: 20px; }
+@keyframes draw-check {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
 
 @keyframes pop {
-    0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
-    40% { opacity: 1; }
-    100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1.5); opacity: 0; }
+  0% {
+    translate: -50% -50%;
+    scale: 0;
+    opacity: 1;
+  }
+
+  40% {
+    opacity: 1;
+  }
+
+  100% {
+    translate: calc(-50% + var(--tx)) calc(-50% + var(--ty));
+    scale: 1.5;
+    opacity: 0;
+  }
 }

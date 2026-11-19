@@ -1,33 +1,31 @@
 import './Loading.css';
 
 interface LoadingProps {
+  /** 0–100. Leave out for an indeterminate bar (e.g. while a page's code loads). */
   progress?: number;
   messages?: string[];
 }
 
-function Loading({ progress = 0, messages = [] }: LoadingProps) {
-  let displayText = `Loading map data... ${progress}%`;
+function Loading({ progress, messages = [] }: LoadingProps) {
+  const indeterminate = progress === undefined;
+  let displayText = indeterminate ? 'Loading…' : `Loading map data... ${progress}%`;
 
-  if (messages.length > 0) {
-    let messageIndex = Math.floor((progress / 100) * messages.length);
-    
-    if (messageIndex >= messages.length) {
-      messageIndex = messages.length - 1;
-    }
-    
+  if (!indeterminate && messages.length > 0) {
+    const messageIndex = Math.min(
+      messages.length - 1,
+      Math.floor((progress / 100) * messages.length),
+    );
     displayText = `${messages[messageIndex]} (${progress}%)`;
   }
 
   return (
-    <div className="loading-wrapper">
-      
-      <div className="progress-container">
-        <div 
-          className="progress-fill" 
-          style={{ width: `${progress}%` }}
+    <div className="loading-wrapper" role="status" aria-live="polite">
+      <div className={`progress-container${indeterminate ? ' indeterminate' : ''}`}>
+        <div
+          className="progress-fill"
+          style={indeterminate ? undefined : { width: `${progress}%` }}
         ></div>
       </div>
-      
       <p className="progress-text">{displayText}</p>
     </div>
   );

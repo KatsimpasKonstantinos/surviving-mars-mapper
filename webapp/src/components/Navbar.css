@@ -1,160 +1,186 @@
-.navbar-wrapper {
+@layer components {
+  .navbar-wrapper {
     position: sticky;
-    top: 0;
-    width: 100%;
+    inset-block-start: 0;
     z-index: 50;
-    transition: background-color var(--transition-duration) ease;
-}
-
-.navbar {
-    border-bottom: 2px solid var(--color-primary);
+    inline-size: 100%;
+    background: color-mix(in srgb, var(--color-bg) 72%, transparent);
     backdrop-filter: blur(16px);
+    border-block-end: 1px solid var(--border);
+  }
+
+  .navbar {
+    position: relative;
     display: flex;
-    max-width: 1555px;
-    margin: 0 auto;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 2rem;
     gap: 1.5rem;
-}
+    max-inline-size: 1600px;
+    margin-inline: auto;
+    padding: 0.75rem 2rem;
+  }
 
-.navbar-header {
+  .navbar-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     font-family: var(--font-heading);
-}
+  }
 
-.navbar-logo {
-    text-decoration: none;
+  .navbar-logo {
     color: var(--color-text);
-    transition: opacity 0.2s ease;
-}
+    transition: opacity var(--transition-duration) ease;
 
-.navbar-logo:hover {
-    opacity: 0.8;
-}
+    &:hover {
+      opacity: 0.8;
+    }
+  }
 
-.navbar-logo h1 {
+  .navbar-title {
+    display: block;
     margin: 0;
-    font-size: 1.7rem;
+    font-size: clamp(1.3rem, 1rem + 1.2vw, 1.6rem);
     font-weight: 700;
-}
+    line-height: 1.2;
+  }
 
-.hamburger-btn {
+  .hamburger-btn {
     display: none;
+    padding: 0.4rem;
     background: transparent;
-    border: none;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
     color: var(--color-text);
     cursor: pointer;
-    padding: 0.5rem;
-    transition: color 0.2s ease;
-}
+    transition: background-color var(--transition-duration) ease;
 
-.hamburger-btn:hover {
-    color: var(--color-primary);
-}
+    &:hover,
+    &[aria-expanded='true'] {
+      background: var(--hover);
+    }
 
-.right-section {
+    svg {
+      inline-size: 24px;
+      block-size: 24px;
+    }
+  }
+
+  .right-section {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    
-}
+    gap: 0.25rem;
+  }
 
-.dropdown-container {
+  .dropdown-container {
     position: relative;
     display: inline-block;
-    
-}
+  }
 
-.nav-button {
-    background-color: transparent;
-    color: var(--color-text);
-    font-family: var(--font);
-    font-size: 1rem;
-    font-family: var(--font-subheading);
-
-    font-weight: 500;
-    text-decoration: none;
-    padding: 0.5rem 1rem;
-    border: 1px solid color-mix(in srgb, var(--color-text) 20%, transparent);
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s ease;
+  /* Borderless items; the current page is a red pill */
+  .nav-button {
     display: inline-block;
-}
+    padding: 0.4rem 0.95rem;
+    background-color: transparent;
+    color: var(--color-text-secondary);
+    border: none;
+    border-radius: 999px;
+    font-family: var(--font-subheading);
+    font-size: 1.05rem;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition-property: background-color, color;
+    transition-duration: var(--transition-duration);
 
-.nav-button:hover {
-    background-color: var(--color-primary);
-    color: var(--color-bg);
-    border-color: var(--color-primary);
-}
+    &:hover {
+      background-color: var(--hover);
+      color: var(--color-text);
+    }
 
-.nav-button:active {
-    transform: translateY(0);
-}
+    &.active {
+      background-color: var(--color-primary);
+      color: white;
+      cursor: default;
+    }
+  }
 
-.github-icon {
+  .github-icon {
     display: flex;
     align-items: center;
-    color: var(--color-text);
-    transition: color 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     flex-shrink: 0;
-}
+    margin-inline: 0.6rem 0.4rem;
+    color: var(--color-text-secondary);
+    transition: color var(--transition-duration) ease;
 
-.github-icon:hover {
-    color: var(--color-primary);
-    transform: scale(1.15) rotate(5deg);
-}
+    svg {
+      inline-size: 24px;
+      block-size: 24px;
+    }
 
-.nav-button.active {
-    background-color: var(--color-primary);
-    color: var(--color-bg);
-    border-color: var(--color-primary);
-    cursor: default;
-}
+    &:hover {
+      color: var(--color-text);
+    }
+  }
 
-@media (max-width: 1200px) {
+  @media (width <= 1200px) {
     .navbar {
-        position: relative; 
-        padding: 1rem 2rem; 
+      padding: 0.6rem 1.25rem;
     }
 
     .navbar-header {
-        width: 100%; 
+      inline-size: 100%;
     }
 
     .hamburger-btn {
-        display: block;
+      display: block;
     }
 
+    /* Dropdown card; fades in via @starting-style when it switches from display: none. */
     .right-section {
-        display: none; 
-        position: absolute;
-        top: 100%; 
-        right: 0;
-        width: 120px;
-        flex-direction: column;
-        margin-top: 0;
-        gap: 1rem;
-        
-        padding: 1.5rem 2rem;
-        background-color: var(--color-bg, #1a1a1a);
-        border: 2px solid var(--color-primary);
+      display: none;
+      position: absolute;
+      inset-block-start: calc(100% + 8px);
+      inset-inline-end: 1rem;
+      inline-size: min(240px, calc(100vw - 2rem));
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.25rem;
+      padding: 0.5rem;
+      background-color: var(--surface-solid);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-card);
+      opacity: 0;
+      translate: 0 -8px;
+      transition:
+        opacity var(--transition-duration) ease,
+        translate var(--transition-duration) ease,
+        display var(--transition-duration) allow-discrete;
+
+      &.open {
+        display: flex;
+        opacity: 1;
+        translate: 0 0;
+
+        @starting-style {
+          opacity: 0;
+          translate: 0 -8px;
+        }
+      }
     }
 
-    .right-section.open {
-        display: flex; 
+    .nav-button,
+    .dropdown-container {
+      inline-size: 100%;
+      text-align: start;
     }
 
     .nav-button {
-        width: 100%;
-        text-align: center;
+      padding: 0.55rem 0.9rem;
+      border-radius: var(--radius-sm);
     }
-    
-    .dropdown-container {
-        width: 100%;
-        text-align: center;
+
+    .github-icon {
+      margin: 0.5rem 0.9rem;
     }
+  }
 }
