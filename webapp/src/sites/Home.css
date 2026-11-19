@@ -294,7 +294,19 @@
       }
 
       /* Always reserve exactly two lines so long names don't resize the card. */
-      li span {
+      /* Hover / focus target for the description tooltip */
+      .bt-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        inline-size: 100%;
+        border-radius: var(--radius-sm);
+      }
+
+      /* Only the name text (not the tooltip wrapper span around the item) */
+      li.placeholder > span,
+      .bt-item > span {
         display: -webkit-box;
         -webkit-box-orient: vertical;
         -webkit-line-clamp: 2;

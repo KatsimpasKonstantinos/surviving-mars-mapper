@@ -4,6 +4,7 @@ import type { coordinateString, MapData } from '../types';
 import './Breakthrough.css';
 import { computeBreakthroughTiers, formatBreakthroughName } from '../helper/BreakthroughTiers';
 import { getBreakthroughImageSrc } from '../helper/BreakthroughPreview';
+import BreakthroughTooltip from '../components/BreakthroughTooltip';
 import PageWrapper from '../components/PageWrapper';
 import CoordinateInput from '../components/CoordinateInput';
 import Clipboard from '../components/App/Clipboard';
@@ -120,16 +121,17 @@ function Breakthrough({ coordString, setCoordString, mapData }: BreakthroughProp
                     if (picked === tech) classes.push('active');
                     else if (picked) classes.push('dimmed');
                     return (
-                      <button
-                        type="button"
-                        key={tech}
-                        className={classes.join(' ')}
-                        aria-pressed={picked === tech}
-                        onClick={() => handleNodeClick(tech, tierIndex)}
-                      >
-                        <img src={getBreakthroughImageSrc(tech)} alt="" className="tech-icon" />
-                        <span className="tech-name">{formatBreakthroughName(tech)}</span>
-                      </button>
+                      <BreakthroughTooltip id={tech} key={tech}>
+                        <button
+                          type="button"
+                          className={classes.join(' ')}
+                          aria-pressed={picked === tech}
+                          onClick={() => handleNodeClick(tech, tierIndex)}
+                        >
+                          <img src={getBreakthroughImageSrc(tech)} alt="" className="tech-icon" />
+                          <span className="tech-name">{formatBreakthroughName(tech)}</span>
+                        </button>
+                      </BreakthroughTooltip>
                     );
                   })}
                 </div>

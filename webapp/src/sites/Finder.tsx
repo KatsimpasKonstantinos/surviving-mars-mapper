@@ -31,6 +31,7 @@ import ValueSetFilter, {
   type ValueSetOption,
 } from '../components/finder/ValueSetFilter';
 import MapPreviewTooltip from '../components/finder/MapPreviewTooltip';
+import BreakthroughTooltip from '../components/BreakthroughTooltip';
 import './Finder.css';
 
 // Only the grid features this page uses. The validation module only adds
@@ -284,13 +285,13 @@ function Finder({ coordString, setCoordString, mapData }: FinderProps) {
         cellRenderer: (params: ICellRendererParams<FinderRowData, string[]>) => (
           <div className="breakthrough-cell">
             {params.value?.map((tech) => (
-              <img
-                key={tech}
-                src={getBreakthroughImageSrc(tech)}
-                alt={formatBreakthroughName(tech)}
-                title={formatBreakthroughName(tech)}
-                loading="lazy"
-              />
+              <BreakthroughTooltip id={tech} key={tech} showWithoutDescription>
+                <img
+                  src={getBreakthroughImageSrc(tech)}
+                  alt={formatBreakthroughName(tech)}
+                  loading="lazy"
+                />
+              </BreakthroughTooltip>
             ))}
           </div>
         ),

@@ -8,6 +8,8 @@ import PageWrapper from '../components/PageWrapper';
 import { getMapImageSrc } from '../helper/MapPreview';
 import { getBreakthroughImageSrc } from '../helper/BreakthroughPreview';
 import { formatBreakthroughName } from '../helper/BreakthroughTiers';
+import BreakthroughTooltip from '../components/BreakthroughTooltip';
+import { getBreakthroughInfo } from '../data/breakthroughDescriptions';
 import { coordinateSearch } from '../hooks/useUrlSync';
 
 interface HomeProps {
@@ -179,9 +181,16 @@ function Home({ coordString, setCoordString, mapData, progress, error }: HomePro
               <ul>
                 {activeData
                   ? activeData.FirstBreakthroughs.map((tech) => (
-                      <li key={tech} title={formatBreakthroughName(tech)}>
-                        <img src={getBreakthroughImageSrc(tech)} alt="" />
-                        <span>{formatBreakthroughName(tech)}</span>
+                      <li key={tech}>
+                        <BreakthroughTooltip id={tech}>
+                          <div
+                            className="bt-item"
+                            tabIndex={getBreakthroughInfo(tech) ? 0 : undefined}
+                          >
+                            <img src={getBreakthroughImageSrc(tech)} alt="" />
+                            <span>{formatBreakthroughName(tech)}</span>
+                          </div>
+                        </BreakthroughTooltip>
                       </li>
                     ))
                   : [0, 1, 2].map((i) => (

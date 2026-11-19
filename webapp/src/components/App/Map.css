@@ -314,10 +314,6 @@
     }
   }
 
-  .legend-empty {
-    border: 1px dashed rgb(190 198 208);
-  }
-
   .opacity-control {
     display: flex;
     align-items: center;

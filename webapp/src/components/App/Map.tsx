@@ -17,9 +17,12 @@ interface MapProps {
 type ViewMode = '2d' | '3d';
 type RangeKey = 'Altitude' | 'Temperature' | 'Difficulty';
 
+// Colours sampled from heatmaps_clean/Topography_clean.png and matched cell by cell
+// against the Topography column of the site data.
 const TOPOGRAPHY_SWATCHES = [
-  { label: 'Steep', color: '#440154' },
-  { label: 'Rough', color: '#21918c' },
+  { label: 'Very Flat', color: '#440154' },
+  { label: 'Steep', color: '#31688e' },
+  { label: 'Rough', color: '#35b779' },
   { label: 'Mountainous', color: '#fde725' },
 ];
 
@@ -337,10 +340,6 @@ function Map({ coordString, setCoordString, mapData }: MapProps) {
                     {s.label}
                   </span>
                 ))}
-                <span>
-                  <i className="legend-empty" />
-                  Very Flat
-                </span>
               </div>
             ) : (
               <div className="legend-scale">

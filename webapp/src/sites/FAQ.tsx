@@ -56,6 +56,12 @@ function FAQ() {
             site's seed. The Finder can filter for sites whose first choice includes a specific
             breakthrough, and the Breakthrough page lets you follow the tree further.
           </p>
+          <p>
+            Hover over a breakthrough to see what it does. The descriptions are taken from the{' '}
+            <a href="https://survivingmars.paradoxwikis.com/Breakthrough">Surviving Mars Wiki</a>{' '}
+            (licensed under{' '}
+            <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/">CC BY-NC-SA 3.0</a>).
+          </p>
         </section>
 
         <section className="faq-item card">
