@@ -31,6 +31,9 @@
     }
 
     .map-section {
+      /* Above the info cards, so the heatmap picker is never covered (e.g. on mobile) */
+      position: relative;
+      z-index: 3;
       display: flex;
       justify-content: center;
       align-items: flex-start;
@@ -46,7 +49,9 @@
     .card-header {
       display: flex;
       justify-content: space-between;
-      align-items: baseline;
+      align-items: center;
+      /* Same height with or without the link on the right */
+      min-block-size: 1.5rem;
       gap: 12px;
       margin-block-end: 12px;
 
@@ -61,23 +66,26 @@
       position: relative;
       z-index: 2;
 
-      .card-label {
-        margin-block-end: 4px;
-      }
-
       /* Fixed one-line height so switching between sites never moves the layout. */
       h1 {
-        block-size: 2.4rem;
-        margin: 0;
+        block-size: 2.1rem;
+        margin: 0 0 6px;
         font-family: var(--font-heading);
-        font-size: 2rem;
-        line-height: 2.4rem;
+        font-size: 1.7rem;
+        line-height: 2.1rem;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
 
+        /* Long names wrap onto two smaller lines within the same height */
         &.long-name {
-          font-size: 1.5rem;
+          display: -webkit-box;
+          -webkit-box-orient: vertical;
+          -webkit-line-clamp: 2;
+          line-clamp: 2;
+          font-size: 1.05rem;
+          line-height: 1.05rem;
+          white-space: normal;
         }
 
         &.hasColonyName {
@@ -86,11 +94,12 @@
       }
     }
 
+    /* Thumbnail on the left, name and coordinate stacked on the right */
     .location-header {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       gap: 14px;
-      margin-block-end: 12px;
+      margin-block-end: 14px;
     }
 
     .location-title {
@@ -98,59 +107,74 @@
       min-inline-size: 0;
     }
 
-    /* Small map template preview; grows on hover so the layout is still readable */
+    /* Small map template preview; grows on hover.
+       Its own layer is permanent (not only on :hover), otherwise it would drop
+       behind the coordinate field while shrinking back. */
     .map-thumb {
+      position: relative;
+      z-index: 1;
       flex-shrink: 0;
-      inline-size: 112px;
+      inline-size: 128px;
       aspect-ratio: 16 / 9;
       object-fit: cover;
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
-      transform-origin: top right;
+      transform-origin: top left;
       transition:
         scale 0.2s ease,
         box-shadow 0.2s ease;
 
       &:hover {
-        position: relative;
-        z-index: 1;
         scale: 2.6;
         box-shadow: var(--shadow-card);
       }
     }
 
-    .coordinate-row {
-      display: flex;
-      align-items: flex-start;
-      gap: 2px;
-      margin-block-end: 12px;
-      font-size: 1.3em;
-      font-weight: 600;
+    /* Coordinate input with the copy / share buttons inside its right edge */
+    .coordinate-field {
+      --field-height: 38px;
+
+      position: relative;
 
       .CoordinateInput {
-        margin-inline-end: 6px;
+        display: flex;
+        inline-size: 100%;
+      }
+
+      .coordinate-input {
+        inline-size: 100%;
+        block-size: var(--field-height);
+        padding-inline-end: 68px;
+        font-size: 1.15rem;
+      }
+
+      .coordinate-actions {
+        position: absolute;
+        inset-block-start: 0;
+        inset-inline-end: 4px;
+        display: flex;
+        align-items: center;
+        block-size: var(--field-height);
       }
 
       .Clipboard-btn {
-        margin-block-start: 4px;
+        margin: 0;
       }
     }
 
-    /* 2×2 readout: small label above the value, hairline between the rows */
+    /* One row of four values: small label above each value */
     .stats-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0 16px;
+      grid-template-columns: repeat(4, auto);
+      justify-content: space-between;
+      gap: 12px;
       margin: 0;
+      padding-block-start: 12px;
       border-block-start: 1px solid var(--border);
     }
 
     .stat {
-      padding-block: 8px;
-
-      &:nth-child(-n + 2) {
-        border-block-end: 1px solid var(--border);
-      }
+      min-inline-size: 0;
 
       dt {
         color: var(--color-text-secondary);
@@ -159,8 +183,9 @@
 
       dd {
         margin: 0;
-        font-size: 1.15em;
+        font-size: 1.1em;
         line-height: 1.25;
+        white-space: nowrap;
         font-variant-numeric: tabular-nums;
       }
     }
@@ -284,6 +309,18 @@
         inline-size: 64px;
         block-size: 64px;
         object-fit: contain;
+      }
+
+      /* Shown until a site is selected; same size as a real icon */
+      .breakthrough-placeholder {
+        inline-size: 64px;
+        block-size: 64px;
+        border: 1px dashed var(--border-strong);
+        border-radius: 50%;
+      }
+
+      .placeholder span {
+        color: var(--color-text-secondary);
       }
     }
 

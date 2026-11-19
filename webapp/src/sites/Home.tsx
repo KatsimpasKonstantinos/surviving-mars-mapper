@@ -67,8 +67,15 @@ function Home({ coordString, setCoordString, mapData, progress, error }: HomePro
           <aside className="info-panel" aria-label="Selected landing site">
             <section className="location-card card">
               <div className="location-header">
+                {/* Map template thumbnail; enlarges on hover */}
+                <img
+                  className="map-thumb"
+                  src={getMapImageSrc(activeData?.MapTemplateID ?? '')}
+                  alt={activeData ? `Map template ${activeData.MapTemplateID}` : 'No site selected'}
+                  title={activeData?.MapTemplateID}
+                  decoding="async"
+                />
                 <div className="location-title">
-                  <p className="card-label">Landing site</p>
                   <h1
                     className={
                       [
@@ -82,25 +89,19 @@ function Home({ coordString, setCoordString, mapData, progress, error }: HomePro
                   >
                     {activeData?.SiteName || 'Colony Site'}
                   </h1>
+                  <div className="coordinate-field">
+                    <CoordinateInput
+                      key={coordString ?? ''}
+                      value={coordString}
+                      onCommit={setCoordString}
+                      placeholder="Click the map"
+                    />
+                    <div className="coordinate-actions">
+                      <Clipboard copy={coordString} label="Copy coordinate" />
+                      <Clipboard copy={shareUrl} label="Copy link to this site" icon="link" />
+                    </div>
+                  </div>
                 </div>
-                {/* Map template thumbnail; enlarges on hover */}
-                <img
-                  className="map-thumb"
-                  src={getMapImageSrc(activeData?.MapTemplateID ?? '')}
-                  alt={activeData ? `Map template ${activeData.MapTemplateID}` : 'No site selected'}
-                  title={activeData?.MapTemplateID}
-                  decoding="async"
-                />
-              </div>
-              <div className="coordinate-row">
-                <CoordinateInput
-                  key={coordString ?? ''}
-                  value={coordString}
-                  onCommit={setCoordString}
-                  placeholder="Click the map"
-                />
-                <Clipboard copy={coordString} label="Copy coordinate" />
-                <Clipboard copy={shareUrl} label="Copy link to this site" icon="link" />
               </div>
 
               {isLoading && (
@@ -125,11 +126,11 @@ function Home({ coordString, setCoordString, mapData, progress, error }: HomePro
                   </dd>
                 </div>
                 <div className="stat">
-                  <dt>Temperature</dt>
+                  <dt>Temp.</dt>
                   <dd>{activeData ? `${activeData.Temperature}°C` : placeholder}</dd>
                 </div>
                 <div className="stat">
-                  <dt>Topography</dt>
+                  <dt>Terrain</dt>
                   <dd>{activeData?.Topography || placeholder}</dd>
                 </div>
                 <div className="stat">
@@ -163,27 +164,34 @@ function Home({ coordString, setCoordString, mapData, progress, error }: HomePro
               </div>
             </section>
 
-            {activeData && (
-              <section className="breakthrough-preview card">
-                <div className="card-header">
-                  <h2 className="card-label">First breakthrough choice</h2>
+            <section className="breakthrough-preview card">
+              <div className="card-header">
+                <h2 className="card-label">First breakthrough choice</h2>
+                {activeData && (
                   <Link
                     className="panel-link"
                     to={{ pathname: '/breakthrough', search: coordinateSearch(coordString) }}
                   >
                     Full tree →
                   </Link>
-                </div>
-                <ul>
-                  {activeData.FirstBreakthroughs.map((tech) => (
-                    <li key={tech} title={formatBreakthroughName(tech)}>
-                      <img src={getBreakthroughImageSrc(tech)} alt="" />
-                      <span>{formatBreakthroughName(tech)}</span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
+                )}
+              </div>
+              <ul>
+                {activeData
+                  ? activeData.FirstBreakthroughs.map((tech) => (
+                      <li key={tech} title={formatBreakthroughName(tech)}>
+                        <img src={getBreakthroughImageSrc(tech)} alt="" />
+                        <span>{formatBreakthroughName(tech)}</span>
+                      </li>
+                    ))
+                  : [0, 1, 2].map((i) => (
+                      <li key={i} className="placeholder" aria-hidden="true">
+                        <div className="breakthrough-placeholder" />
+                        <span>{i === 1 ? 'Select a site' : ''}</span>
+                      </li>
+                    ))}
+              </ul>
+            </section>
           </aside>
 
           <section className="map-section" aria-label="Mars map">
