@@ -3,7 +3,6 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@12.21.0",
   "scripts": {
     "dev": "vp dev",
     "data": "node scripts/build-data.mjs",
@@ -33,5 +32,6 @@
     "typescript": "~7.0.2",
     "vite": "catalog:",
     "vite-plus": "catalog:"
-  }
+  },
+  "packageManager": "pnpm@12.21.0"
 }
