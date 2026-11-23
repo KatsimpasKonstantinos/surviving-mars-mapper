@@ -19,35 +19,15 @@
     font-size: 0.95rem;
   }
 
-  /* ---- View mode toggle ---- */
-  /* Segmented control: the chosen view is a red pill */
-  .view-toggle {
-    display: flex;
+  /* ---- View mode toggle: the shared .segmented control, a bit larger ---- */
+  .view-toggle.segmented {
     padding: 3px;
-    background: var(--hover);
-    border-radius: 999px;
-  }
 
-  .view-toggle-btn {
-    padding: 3px 14px;
-    background: transparent;
-    color: var(--color-text-secondary);
-    border: none;
-    border-radius: 999px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    cursor: pointer;
-    transition-property: background-color, color;
-    transition-duration: var(--transition-duration);
-
-    &.active {
-      background-color: var(--color-primary);
-      color: white;
-    }
-
-    &:not(.active):hover {
-      color: var(--color-text);
+    > button {
+      padding: 3px 14px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
     }
   }
 
@@ -312,6 +292,13 @@
       block-size: 10px;
       border-radius: 2px;
     }
+  }
+
+  /* "Finder results": one swatch in the highlight colour */
+  .legend-dot {
+    inline-size: 10px;
+    block-size: 10px;
+    border-radius: 2px;
   }
 
   .opacity-control {

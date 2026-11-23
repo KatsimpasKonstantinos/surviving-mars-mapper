@@ -254,6 +254,56 @@
       text-decoration: underline;
     }
   }
+
+  /* Segmented control: a track of pill buttons, the chosen one is a red pill
+     (map view, match preferences, breakthrough filter) */
+  .segmented {
+    display: flex;
+    padding: 2px;
+    background: var(--hover);
+    border-radius: 999px;
+
+    > button {
+      padding: 1px 9px;
+      background: transparent;
+      color: var(--color-text-secondary);
+      border: none;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      white-space: nowrap;
+      cursor: pointer;
+      transition-property: background-color, color;
+      transition-duration: var(--transition-duration);
+
+      &:hover:not(:disabled) {
+        color: var(--color-text);
+      }
+
+      &:is([aria-checked='true'], [aria-pressed='true']) {
+        background: var(--color-primary);
+        color: white;
+      }
+
+      &:disabled {
+        opacity: 0.35;
+        cursor: default;
+      }
+    }
+  }
+
+  /* Small outlined pill: "Map", "Tree", "Path" links and the compare chip */
+  .chip {
+    padding-inline: 6px;
+    color: var(--color-text-secondary);
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    font-size: 0.85em;
+    line-height: 1.5;
+
+    &:hover {
+      color: var(--color-secondary);
+    }
+  }
 }
 
 @keyframes page-enter {

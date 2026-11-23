@@ -10,13 +10,18 @@ dir_clean = 'heatmaps_clean'
 os.makedirs(dir_detailed, exist_ok=True)
 os.makedirs(dir_clean, exist_ok=True)
 
+# Same order and colours (viridis) as the "Terrain" layer in the web app.
+# The CSV says 'Very Flat', not 'Flat'; unmapped values would become NaN (blank).
 topo_dict = {
-    'Flat': 0, 
-    'Steep': 1, 
-    'Rough': 2, 
+    'Very Flat': 0,
+    'Steep': 1,
+    'Rough': 2,
     'Mountainous': 3
 }
 df['Topography_Code'] = df['Topography'].map(topo_dict)
+unmapped = df.loc[df['Topography_Code'].isna(), 'Topography'].unique()
+if len(unmapped):
+    raise ValueError(f"Unknown topography values: {list(unmapped)}")
 
 legend_print = {v: k for k, v in topo_dict.items()}
 print(f"Topography Legend: {legend_print}")

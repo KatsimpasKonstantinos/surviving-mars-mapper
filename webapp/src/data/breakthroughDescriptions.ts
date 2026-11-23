@@ -7,13 +7,13 @@
 // Data-extraction/log2breakthroughs.py can regenerate this file from the game itself
 // (descriptions only, without the notes below).
 
-export interface BreakthroughInfo {
+interface BreakthroughInfo {
   description: string;
   /** Extra details, shown smaller below the description */
   notes?: string[];
 }
 
-export const BreakthroughDescriptions: Record<string, BreakthroughInfo> = {
+const BreakthroughDescriptions: Record<string, BreakthroughInfo> = {
   AdvancedDroneDrive: { description: 'Drones move 40% faster.' },
   AlienImprints: {
     description:

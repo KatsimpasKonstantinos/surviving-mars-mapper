@@ -1,21 +1,16 @@
 import './DarkModeToggle.css';
 
 type Props = {
+  /** Checked = light mode */
   checked: boolean;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange: () => void;
 };
 
+/** Light/dark switch; the Navbar applies and remembers the theme. */
 export default function DarkModeToggle({ checked, onChange }: Props) {
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const isDarkMode = e.target.checked;
-    localStorage.setItem('theme', isDarkMode ? 'light' : 'dark');
-
-    onChange(e);
-  };
-
   return (
     <label className="DarkModeToggle">
-      <input type="checkbox" checked={checked} onChange={handleChange} />
+      <input type="checkbox" checked={checked} onChange={onChange} />
 
       <svg viewBox="0 0 101 51" xmlns="http://www.w3.org/2000/svg">
         <defs>

@@ -144,7 +144,7 @@
       .coordinate-input {
         inline-size: 100%;
         block-size: var(--field-height);
-        padding-inline-end: 68px;
+        padding-inline-end: 98px;
         font-size: 1.15rem;
       }
 
@@ -243,26 +243,6 @@
       white-space: nowrap;
     }
 
-    .meter-container {
-      display: flex;
-      flex-shrink: 0;
-      gap: 3px;
-    }
-
-    .meter-box {
-      inline-size: 18px;
-      block-size: 16px;
-      border: 1px solid var(--border-strong);
-      border-radius: 2px;
-      transform: skewX(-30deg);
-      transition: background-color 0.25s ease;
-
-      &:is(.filled-threat, .filled-resource) {
-        background-color: var(--color-accent);
-        border-color: var(--color-accent);
-      }
-    }
-
     /* Too narrow for threats and resources side by side */
     @container analysis (width < 345px) {
       .analysis-section {
@@ -301,7 +281,20 @@
         align-items: center;
         gap: 6px;
         inline-size: 100%;
+        color: inherit;
         border-radius: var(--radius-sm);
+
+        img {
+          transition: scale var(--transition-duration) ease;
+        }
+
+        &:hover {
+          color: var(--color-secondary);
+
+          img {
+            scale: 1.08;
+          }
+        }
       }
 
       /* Only the name text (not the tooltip wrapper span around the item) */
@@ -337,12 +330,7 @@
     }
 
     .panel-link {
-      color: var(--color-secondary);
       font-size: 0.95em;
-
-      &:hover {
-        text-decoration: underline;
-      }
     }
 
     @media (width <= 1200px) {

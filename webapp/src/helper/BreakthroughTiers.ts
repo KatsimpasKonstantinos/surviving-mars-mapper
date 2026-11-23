@@ -4,7 +4,13 @@ import { CreateRandFromTrueSeed, StableShuffle } from './SurvivingMarsRNG.ts';
 /** Breakthroughs the game never offers as a regular choice. */
 export const InvalidTechs = new Set(['CaptureAsteroid']);
 
+/** Breakthroughs offered per choice */
 export const CHOICES_PER_TIER = 3;
+
+/** Positions of InvalidTechs in TechBreakthroughList (the fast search works on indices) */
+export const INVALID_TECH_INDICES: ReadonlySet<number> = new Set(
+  TechBreakthroughList.flatMap((tech, i) => (InvalidTechs.has(tech) ? [i] : [])),
+);
 
 /**
  * Re-creates the game's breakthrough shuffle for a site.

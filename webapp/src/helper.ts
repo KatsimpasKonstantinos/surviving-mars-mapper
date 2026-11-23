@@ -3,6 +3,8 @@ import type { coordinate, coordinateString } from './types';
 export const LAT_LIMIT = 70;
 export const LONG_LIMIT = 180;
 
+export const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x));
+
 export function coordinateTocoordinateString(coordinate: coordinate): coordinateString {
   const latDirection = coordinate.lat >= 0 ? 'S' : 'N';
   const longDirection = coordinate.long >= 0 ? 'E' : 'W';
@@ -68,7 +70,7 @@ export function offsetCoordinate(
 ): coordinateString | null {
   const c = coordinateStringTocoordinate(coordStr);
   if (!c) return null;
-  const lat = Math.max(-LAT_LIMIT, Math.min(LAT_LIMIT, c.lat + dLat));
+  const lat = clamp(c.lat + dLat, -LAT_LIMIT, LAT_LIMIT);
   // Longitudes -180 and 180 are the same meridian; wrap within [-180, 180).
   const span = LONG_LIMIT * 2;
   const long = ((((c.long + dLong + LONG_LIMIT) % span) + span) % span) - LONG_LIMIT;

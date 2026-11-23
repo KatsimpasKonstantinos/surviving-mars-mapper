@@ -1,0 +1,30 @@
+@layer components {
+  .meter-container {
+    display: flex;
+    flex-shrink: 0;
+    gap: 3px;
+
+    &.compact {
+      padding-inline-start: 4px;
+
+      .meter-box {
+        inline-size: 14px;
+        block-size: 14px;
+      }
+    }
+  }
+
+  .meter-box {
+    inline-size: 18px;
+    block-size: 16px;
+    border: 1px solid var(--border-strong);
+    border-radius: 2px;
+    transform: skewX(-30deg);
+    transition: background-color 0.25s ease;
+
+    &.filled {
+      background-color: var(--color-accent);
+      border-color: var(--color-accent);
+    }
+  }
+}

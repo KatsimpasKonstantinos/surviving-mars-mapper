@@ -1,9 +1,20 @@
-import { useState, Suspense, lazy, useMemo, useRef, useEffect } from 'react';
-import { useSearchParams } from 'react-router';
+import { useState, Suspense, lazy, useMemo, useRef } from 'react';
+import { Link } from 'react-router';
 import imageMars from '../../assets/mars.webp';
 import './Map.css';
 import type { coordinateString, MapData } from '../../types';
 import { offsetCoordinate } from '../../helper';
+import { cssGradient, extent, gridValues } from '../../data/heatmap';
+import { LAYERS, LAYER_GROUPS, layerPixels, layerStops, type Layer } from '../../data/layers';
+import { scoreSites, useWeights } from '../../data/score';
+import {
+  coordinateSearch,
+  LAYER_PARAM,
+  PREFS_PARAM,
+  useSearchParam,
+  VIEW_PARAM,
+} from '../../hooks/useUrlSync';
+import { useDismiss } from '../../hooks/useDismiss';
 
 // Lazy-load the unified 2D/3D Three.js map so Three.js stays out of the main bundle
 const GlobeMap = lazy(() => import('./GlobeMap'));
@@ -12,91 +23,11 @@ interface MapProps {
   coordString: coordinateString | null;
   setCoordString: (coordStr: coordinateString | null) => void;
   mapData: MapData | null;
+  /** Sites matching the Finder's current filters (null = no filter active) */
+  finderMatches: ReadonlySet<string> | null;
 }
 
 type ViewMode = '2d' | '3d';
-type RangeKey = 'Altitude' | 'Temperature' | 'Difficulty';
-
-// Colours sampled from heatmaps_clean/Topography_clean.png and matched cell by cell
-// against the Topography column of the site data.
-const TOPOGRAPHY_SWATCHES = [
-  { label: 'Very Flat', color: '#440154' },
-  { label: 'Steep', color: '#31688e' },
-  { label: 'Rough', color: '#35b779' },
-  { label: 'Mountainous', color: '#fde725' },
-];
-
-/**
- * Heatmap overlays and their colour scales. The gradients mirror the matplotlib
- * colormaps used by Data-extraction/csv2heatmap.py.
- */
-const OVERLAYS: Record<
-  string,
-  { label: string; gradient: string; low: string; high: string; range?: RangeKey }
-> = {
-  Altitude: {
-    label: 'Altitude',
-    gradient: '#ffffff, #ffff00 25%, #ff0000 62%, #0b0000',
-    low: 'Low',
-    high: 'High',
-    range: 'Altitude',
-  },
-  Temperature: {
-    label: 'Temperature',
-    gradient: '#3b4cc0, #dddddd, #b40426',
-    low: 'Cold',
-    high: 'Warm',
-    range: 'Temperature',
-  },
-  Topography: {
-    label: 'Terrain',
-    gradient: TOPOGRAPHY_SWATCHES.map((s) => s.color).join(', '),
-    low: '',
-    high: '',
-  },
-  Difficulty: {
-    label: 'Challenge',
-    gradient: '#fcffa4, #f98e09, #bc3754, #57106e, #000004',
-    low: 'Easy',
-    high: 'Hard',
-    range: 'Difficulty',
-  },
-  DustDevils: {
-    label: 'Dust Devils',
-    gradient: '#fff5eb, #fd8d3c, #7f2704',
-    low: 'Low',
-    high: 'High',
-  },
-  DustStorm: {
-    label: 'Dust Storms',
-    gradient: '#fff7ec, #fc8d59, #7f0000',
-    low: 'Low',
-    high: 'High',
-  },
-  Meteor: { label: 'Meteors', gradient: '#fff5f0, #fb6a4a, #67000d', low: 'Low', high: 'High' },
-  ColdWave: {
-    label: 'Cold Waves',
-    gradient: '#fcfbfd, #9e9ac8, #3f007d',
-    low: 'Low',
-    high: 'High',
-  },
-  Metals: { label: 'Metals', gradient: '#ffffe5, #fe9929, #662506', low: 'Low', high: 'High' },
-  Concrete: { label: 'Concrete', gradient: '#ffffff, #969696, #000000', low: 'Low', high: 'High' },
-  Water: { label: 'Water', gradient: '#f7fbff, #6baed6, #08306b', low: 'Low', high: 'High' },
-};
-
-/** The same grouping as the info cards next to the map */
-const OVERLAY_GROUPS = [
-  { label: 'Terrain', items: ['Altitude', 'Temperature', 'Topography', 'Difficulty'] },
-  { label: 'Threats', items: ['DustDevils', 'DustStorm', 'Meteor', 'ColdWave'] },
-  { label: 'Resources', items: ['Metals', 'Concrete', 'Water'] },
-];
-
-const RANGE_UNITS: Record<RangeKey, string> = {
-  Altitude: ' m',
-  Temperature: '°C',
-  Difficulty: '%',
-};
 
 const KEY_DELTAS: Record<string, [number, number]> = {
   ArrowUp: [-1, 0], // north = negative latitude
@@ -105,13 +36,12 @@ const KEY_DELTAS: Record<string, [number, number]> = {
   ArrowRight: [0, 1],
 };
 
-/** Small colour sample of a heatmap's scale */
-function Swatch({ name }: { name: string }) {
-  const gradient = OVERLAYS[name]?.gradient;
+/** Small colour sample of a layer's scale */
+function Swatch({ layer }: { layer: Layer }) {
   return (
     <span
       className="layer-swatch"
-      style={gradient ? { background: `linear-gradient(90deg, ${gradient})` } : undefined}
+      style={{ background: cssGradient(layerStops(layer)) }}
       aria-hidden="true"
     />
   );
@@ -122,46 +52,31 @@ function LayerPicker({
   active,
   onSelect,
 }: {
-  active: string;
+  active: string | null;
   onSelect: (name: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (e: PointerEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('pointerdown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('pointerdown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [open]);
+  useDismiss(rootRef, open, () => setOpen(false));
 
   const choose = (name: string | null) => {
     onSelect(name);
     setOpen(false);
   };
 
-  const hasLayer = active !== 'None';
+  const activeLayer = active ? LAYERS[active] : null;
 
   return (
     <div className="layer-picker" ref={rootRef}>
       <button
         type="button"
-        className={`layer-button${hasLayer ? ' has-layer' : ''}`}
+        className={`layer-button${activeLayer ? ' has-layer' : ''}`}
         aria-haspopup="true"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
       >
-        {hasLayer ? <Swatch name={active} /> : <LayersIcon />}
-        <span>{hasLayer ? OVERLAYS[active].label : 'Heatmap'}</span>
+        {activeLayer ? <Swatch layer={activeLayer} /> : <LayersIcon />}
+        <span>{activeLayer ? activeLayer.label : 'Heatmap'}</span>
         <svg className="layer-chevron" viewBox="0 0 24 24" aria-hidden="true">
           <path d="m6 9 6 6 6-6" />
         </svg>
@@ -169,33 +84,35 @@ function LayerPicker({
 
       {open && (
         <div className="layer-panel" role="menu" aria-label="Heatmap layers">
-          {OVERLAY_GROUPS.map((group) => (
-            <div className="layer-group" key={group.label}>
-              <div className="layer-group-label">{group.label}</div>
+          {LAYER_GROUPS.map((group) => (
+            <div className="layer-group" key={group}>
+              <div className="layer-group-label">{group}</div>
               <div className="layer-chips">
-                {group.items.map((name) => (
-                  <button
-                    key={name}
-                    type="button"
-                    role="menuitemradio"
-                    aria-checked={active === name}
-                    className={`layer-chip${active === name ? ' active' : ''}`}
-                    onClick={() => choose(active === name ? null : name)}
-                  >
-                    <Swatch name={name} />
-                    {OVERLAYS[name].label}
-                  </button>
-                ))}
+                {Object.entries(LAYERS)
+                  .filter(([, layer]) => layer.group === group)
+                  .map(([name, layer]) => (
+                    <button
+                      key={name}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={active === name}
+                      className={`layer-chip${active === name ? ' active' : ''}`}
+                      onClick={() => choose(active === name ? null : name)}
+                    >
+                      <Swatch layer={layer} />
+                      {layer.label}
+                    </button>
+                  ))}
               </div>
             </div>
           ))}
           <button
             type="button"
             role="menuitemradio"
-            aria-checked={!hasLayer}
+            aria-checked={!activeLayer}
             className="layer-none"
             onClick={() => choose(null)}
-            disabled={!hasLayer}
+            disabled={!activeLayer}
           >
             No heatmap
           </button>
@@ -214,44 +131,37 @@ function LayersIcon() {
   );
 }
 
-function Map({ coordString, setCoordString, mapData }: MapProps) {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const layerParam = searchParams.get('layer');
-  const activeOverlay = layerParam && layerParam in OVERLAYS ? layerParam : 'None';
-  const viewMode: ViewMode = searchParams.get('view') === '2d' ? '2d' : '3d';
+function Map({ coordString, setCoordString, mapData, finderMatches }: MapProps) {
+  const [layerParam, setLayer] = useSearchParam(LAYER_PARAM);
+  const [viewParam, setView] = useSearchParam(VIEW_PARAM);
+  const activeKey = layerParam && layerParam in LAYERS ? layerParam : null;
+  const layer = activeKey ? LAYERS[activeKey] : null;
+  const viewMode: ViewMode = viewParam === '2d' ? '2d' : '3d';
 
   const [overlayOpacity, setOverlayOpacity] = useState<number>(0.7);
   const [hoverCoord, setHoverCoord] = useState<coordinateString | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  const weights = useWeights();
 
-  const updateParam = (key: string, value: string | null) => {
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        if (value) next.set(key, value);
-        else next.delete(key);
-        return next;
-      },
-      { replace: true },
-    );
-  };
+  // Only score the sites when the match layer is actually shown
+  const scores = useMemo(
+    () => (mapData && layer?.kind === 'score' ? scoreSites(mapData, weights) : null),
+    [mapData, layer, weights],
+  );
 
-  // Min/max of the numeric heatmaps, for the legend labels.
-  const ranges = useMemo(() => {
-    if (!mapData) return null;
-    const r: Record<RangeKey, [number, number]> = {
-      Altitude: [Infinity, -Infinity],
-      Temperature: [Infinity, -Infinity],
-      Difficulty: [Infinity, -Infinity],
-    };
-    for (const entry of Object.values(mapData)) {
-      for (const k of Object.keys(r) as RangeKey[]) {
-        r[k][0] = Math.min(r[k][0], entry[k]);
-        r[k][1] = Math.max(r[k][1], entry[k]);
-      }
-    }
-    return r;
-  }, [mapData]);
+  const overlayPixels = useMemo(
+    () => (mapData && layer ? layerPixels(layer, { mapData, scores, finderMatches }) : null),
+    [mapData, layer, scores, finderMatches],
+  );
+
+  // Real min/max for scale layers with a unit (Altitude, Temperature, Challenge)
+  const range = useMemo(
+    () =>
+      mapData && layer?.kind === 'scale' && layer.unit
+        ? extent(gridValues(mapData, layer.value))
+        : null,
+    [mapData, layer],
+  );
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const delta = KEY_DELTAS[e.key];
@@ -262,21 +172,19 @@ function Map({ coordString, setCoordString, mapData }: MapProps) {
     if (next) setCoordString(next);
   };
 
-  const overlay = activeOverlay !== 'None' ? OVERLAYS[activeOverlay] : null;
-  const range = overlay?.range && ranges ? ranges[overlay.range] : null;
-  const unit = overlay?.range ? RANGE_UNITS[overlay.range] : '';
+  const unit = layer?.kind === 'scale' ? (layer.unit ?? '') : '';
   const format = (n: number) => `${n.toLocaleString('en-US')}${unit}`;
+  const finderLink = { pathname: '/finder', search: coordinateSearch(coordString) };
 
   return (
     <div className="Map-container card">
       <div className="controls-bar">
-        <div className="view-toggle" role="group" aria-label="Map view">
+        <div className="view-toggle segmented" role="group" aria-label="Map view">
           {(['2d', '3d'] as const).map((mode) => (
             <button
               key={mode}
               type="button"
-              className={`view-toggle-btn${viewMode === mode ? ' active' : ''}`}
-              onClick={() => updateParam('view', mode === '2d' ? '2d' : null)}
+              onClick={() => setView(mode === '2d' ? '2d' : null)}
               aria-pressed={viewMode === mode}
             >
               {mode.toUpperCase()}
@@ -284,7 +192,7 @@ function Map({ coordString, setCoordString, mapData }: MapProps) {
           ))}
         </div>
 
-        <LayerPicker active={activeOverlay} onSelect={(name) => updateParam('layer', name)} />
+        <LayerPicker active={activeKey} onSelect={setLayer} />
       </div>
 
       {/* ---- Unified 2D/3D Map Stage ---- */}
@@ -313,7 +221,7 @@ function Map({ coordString, setCoordString, mapData }: MapProps) {
                 viewMode={viewMode}
                 coordString={coordString}
                 setCoordString={setCoordString}
-                activeOverlay={activeOverlay}
+                overlayPixels={overlayPixels}
                 overlayOpacity={overlayOpacity}
                 onHoverCoordinate={setHoverCoord}
               />
@@ -323,32 +231,57 @@ function Map({ coordString, setCoordString, mapData }: MapProps) {
           {hoverCoord && (
             <div className="map-hud" aria-hidden="true">
               {hoverCoord}
+              {scores?.(hoverCoord) !== undefined && <> · match {scores(hoverCoord)}</>}
             </div>
           )}
         </div>
 
         {/* ---- Active heatmap: legend, opacity and close, right on the map ---- */}
-        {overlay && (
-          <div className="layer-bar" role="group" aria-label={`${overlay.label} heatmap`}>
-            <span className="layer-bar-name">{overlay.label}</span>
+        {layer && (
+          <div className="layer-bar" role="group" aria-label={`${layer.label} heatmap`}>
+            <span className="layer-bar-name">{layer.label}</span>
 
-            {activeOverlay === 'Topography' ? (
+            {layer.kind === 'categories' && (
               <div className="legend-swatches">
-                {TOPOGRAPHY_SWATCHES.map((s) => (
-                  <span key={s.label}>
-                    <i style={{ background: s.color }} />
-                    {s.label}
+                {layer.categories.map((c) => (
+                  <span key={c.label}>
+                    <i style={{ background: c.color }} />
+                    {c.label}
                   </span>
                 ))}
               </div>
-            ) : (
+            )}
+
+            {(layer.kind === 'scale' || layer.kind === 'score') && (
               <div className="legend-scale">
-                <span>{range ? format(range[0]) : overlay.low}</span>
-                <span
-                  className="legend-bar"
-                  style={{ background: `linear-gradient(90deg, ${overlay.gradient})` }}
-                />
-                <span>{range ? format(range[1]) : overlay.high}</span>
+                <span>{range ? format(range[0]) : layer.kind === 'score' ? '0' : 'Low'}</span>
+                <span className="legend-bar" style={{ background: cssGradient(layer.stops) }} />
+                <span>{range ? format(range[1]) : layer.kind === 'score' ? '100' : 'High'}</span>
+                {layer.kind === 'score' && (
+                  <Link
+                    className="layer-bar-link"
+                    to={{
+                      pathname: '/finder',
+                      search: coordinateSearch(coordString, { [PREFS_PARAM]: '1' }),
+                    }}
+                  >
+                    Preferences
+                  </Link>
+                )}
+              </div>
+            )}
+
+            {layer.kind === 'finder' && (
+              <div className="legend-scale">
+                <span className="legend-dot" style={{ background: layer.stops[0] }} />
+                <span>
+                  {finderMatches
+                    ? `${finderMatches.size.toLocaleString('en-US')} matching sites`
+                    : 'No Finder filters set'}
+                </span>
+                <Link className="layer-bar-link" to={finderLink}>
+                  {finderMatches ? 'Edit filters' : 'Set filters'}
+                </Link>
               </div>
             )}
 
@@ -370,7 +303,7 @@ function Map({ coordString, setCoordString, mapData }: MapProps) {
             <button
               type="button"
               className="layer-bar-close"
-              onClick={() => updateParam('layer', null)}
+              onClick={() => setLayer(null)}
               aria-label="Hide heatmap"
               title="Hide heatmap"
             >

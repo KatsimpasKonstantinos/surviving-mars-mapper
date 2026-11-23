@@ -9,9 +9,16 @@
     min-block-size: 420px;
     margin-block-start: 20px;
 
-    :is(.finder-toolbar, .container) {
+    :is(.finder-toolbar, .container, .ScoreWeights, .finder-note) {
       inline-size: calc(100% - 48px);
       max-inline-size: 2200px;
+    }
+
+    .finder-note {
+      margin: 0;
+      color: var(--color-text-secondary);
+      font-size: 0.9rem;
+      text-align: start;
     }
 
     .finder-toolbar {
@@ -41,6 +48,7 @@
     }
 
     .finder-reset {
+      display: inline-block;
       padding: 6px 12px;
       background: transparent;
       color: var(--color-text);
@@ -51,10 +59,16 @@
       transition-property: background-color, border-color, color;
       transition-duration: var(--transition-duration);
 
-      &:hover {
+      &:hover,
+      &.active {
         background-color: var(--color-primary);
         border-color: var(--color-primary);
         color: white;
+      }
+
+      &[aria-disabled='true'] {
+        opacity: 0.4;
+        pointer-events: none;
       }
     }
 
@@ -75,7 +89,7 @@
 
     .container {
       flex: 1;
-      min-block-size: 0;
+      min-block-size: 320px;
       scrollbar-width: thin;
       scrollbar-color: var(--border-strong) transparent;
       border-radius: var(--radius);
@@ -86,26 +100,28 @@
     .coordinate-cell {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      gap: 6px;
       block-size: 100%;
 
       > span {
+        margin-inline-end: auto;
         font-weight: bold;
         font-variant-numeric: tabular-nums;
       }
     }
 
-    .show-map-btn {
-      padding-inline: 6px;
-      color: var(--color-text-secondary);
-      border: 1px solid var(--border-strong);
-      border-radius: 999px;
-      font-size: 0.85em;
-      line-height: 1.5;
+    .coordinate-cell .CompareToggle {
+      padding: 2px;
 
-      &:hover {
-        color: var(--color-secondary);
+      svg {
+        inline-size: 17px;
+        block-size: 17px;
       }
+    }
+
+    /* Slimmer match bar in the table rows */
+    .ScoreBar .score-bar-fill {
+      inset-block: 30%;
     }
 
     .breakthrough-cell {
@@ -119,10 +135,32 @@
         block-size: 26px;
         object-fit: contain;
       }
+
+      /* A pick path: arrows between the picks, the extra picks faded */
+      &.is-path {
+        gap: 2px;
+
+        img {
+          inline-size: 24px;
+          block-size: 24px;
+        }
+      }
+
+      .path-arrow {
+        color: var(--color-text-secondary);
+      }
+
+      img.filler {
+        opacity: 0.45;
+      }
+
+      .chip {
+        margin-inline-start: 6px;
+      }
     }
 
     @media (width <= 700px) {
-      :is(.finder-toolbar, .container) {
+      :is(.finder-toolbar, .container, .ScoreWeights, .finder-note) {
         inline-size: calc(100% - 24px);
       }
 

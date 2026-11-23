@@ -1,0 +1,59 @@
+@layer components {
+  .CompareToggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+    background: none;
+    color: var(--color-text-secondary);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: color var(--transition-duration) ease;
+
+    svg {
+      inline-size: 22px;
+      block-size: 22px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    &:hover:not(:disabled) {
+      color: var(--color-text);
+    }
+
+    &.pinned {
+      color: var(--color-secondary);
+
+      rect:first-child {
+        fill: color-mix(in srgb, var(--color-secondary) 25%, transparent);
+      }
+    }
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+
+    /* Labelled pill ("Compare" / "Pinned"), e.g. on the Breakthrough page */
+    &.chip {
+      padding: 0 6px;
+      border: 1px solid var(--border-strong);
+      border-radius: 999px;
+      font-size: 0.85em;
+      line-height: 1.5;
+
+      svg {
+        inline-size: 14px;
+        block-size: 14px;
+      }
+
+      &.pinned {
+        border-color: var(--color-secondary);
+      }
+    }
+  }
+}

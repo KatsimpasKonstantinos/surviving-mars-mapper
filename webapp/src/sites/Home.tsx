@@ -5,12 +5,14 @@ import type { coordinateString, MapData } from '../types';
 import Clipboard from '../components/App/Clipboard';
 import CoordinateInput from '../components/CoordinateInput';
 import PageWrapper from '../components/PageWrapper';
+import Meter from '../components/Meter';
+import CompareToggle from '../components/CompareToggle';
 import { getMapImageSrc } from '../helper/MapPreview';
 import { getBreakthroughImageSrc } from '../helper/BreakthroughPreview';
 import { formatBreakthroughName } from '../helper/BreakthroughTiers';
 import BreakthroughTooltip from '../components/BreakthroughTooltip';
-import { getBreakthroughInfo } from '../data/breakthroughDescriptions';
-import { coordinateSearch } from '../hooks/useUrlSync';
+import { breakthroughSearch, coordinateSearch } from '../hooks/useUrlSync';
+import { RESOURCES, THREATS } from '../data/attributes';
 
 interface HomeProps {
   coordString: coordinateString | null;
@@ -18,43 +20,10 @@ interface HomeProps {
   mapData: MapData | null;
   progress: number;
   error: string | null;
+  finderMatches: ReadonlySet<string> | null;
 }
 
-const THREATS = [
-  { key: 'DustDevilsBars', label: 'Dust Devils' },
-  { key: 'DustStormBars', label: 'Dust Storms' },
-  { key: 'MeteorBars', label: 'Meteors' },
-  { key: 'ColdWaveBars', label: 'Cold Waves' },
-] as const;
-
-const RESOURCES = [
-  { key: 'MetalsBars', label: 'Metals' },
-  { key: 'ConcreteBars', label: 'Concrete' },
-  { key: 'WaterBars', label: 'Water' },
-] as const;
-
-const TOTAL_BARS = 4;
-
-function Meter({
-  value,
-  type,
-  label,
-}: {
-  value: number;
-  type: 'threat' | 'resource';
-  label: string;
-}) {
-  const fillClass = type === 'threat' ? 'filled-threat' : 'filled-resource';
-  return (
-    <div className="meter-container" role="img" aria-label={`${label}: ${value} of ${TOTAL_BARS}`}>
-      {Array.from({ length: TOTAL_BARS }).map((_, index) => (
-        <div key={index} className={`meter-box ${index < value ? fillClass : ''}`}></div>
-      ))}
-    </div>
-  );
-}
-
-function Home({ coordString, setCoordString, mapData, progress, error }: HomeProps) {
+function Home({ coordString, setCoordString, mapData, progress, error, finderMatches }: HomeProps) {
   const activeData = coordString && mapData ? mapData[coordString] : null;
   const isLoading = !mapData && !error;
   const placeholder = isLoading ? '…' : '---';
@@ -101,6 +70,7 @@ function Home({ coordString, setCoordString, mapData, progress, error }: HomePro
                     <div className="coordinate-actions">
                       <Clipboard copy={coordString} label="Copy coordinate" />
                       <Clipboard copy={shareUrl} label="Copy link to this site" icon="link" />
+                      <CompareToggle site={activeData ? coordString : null} />
                     </div>
                   </div>
                 </div>
@@ -146,9 +116,9 @@ function Home({ coordString, setCoordString, mapData, progress, error }: HomePro
               <div className="analysis-section">
                 <div className="analysis-column">
                   <h2 className="card-label">Threats</h2>
-                  {THREATS.map(({ key, label }) => (
-                    <div className="analysis-row" key={key}>
-                      <Meter value={activeData?.[key] ?? 0} type="threat" label={label} />
+                  {THREATS.map(({ bars, label }) => (
+                    <div className="analysis-row" key={bars}>
+                      <Meter value={activeData?.[bars] ?? 0} label={label} />
                       <div className="analysis-name">{label}</div>
                     </div>
                   ))}
@@ -156,9 +126,9 @@ function Home({ coordString, setCoordString, mapData, progress, error }: HomePro
 
                 <div className="analysis-column">
                   <h2 className="card-label">Resources</h2>
-                  {RESOURCES.map(({ key, label }) => (
-                    <div className="analysis-row" key={key}>
-                      <Meter value={activeData?.[key] ?? 0} type="resource" label={label} />
+                  {RESOURCES.map(({ bars, label }) => (
+                    <div className="analysis-row" key={bars}>
+                      <Meter value={activeData?.[bars] ?? 0} label={label} />
                       <div className="analysis-name">{label}</div>
                     </div>
                   ))}
@@ -183,13 +153,17 @@ function Home({ coordString, setCoordString, mapData, progress, error }: HomePro
                   ? activeData.FirstBreakthroughs.map((tech) => (
                       <li key={tech}>
                         <BreakthroughTooltip id={tech}>
-                          <div
+                          {/* Opens the tree with this breakthrough already picked */}
+                          <Link
                             className="bt-item"
-                            tabIndex={getBreakthroughInfo(tech) ? 0 : undefined}
+                            to={{
+                              pathname: '/breakthrough',
+                              search: breakthroughSearch(coordString!, [tech]),
+                            }}
                           >
                             <img src={getBreakthroughImageSrc(tech)} alt="" />
                             <span>{formatBreakthroughName(tech)}</span>
-                          </div>
+                          </Link>
                         </BreakthroughTooltip>
                       </li>
                     ))
@@ -204,7 +178,12 @@ function Home({ coordString, setCoordString, mapData, progress, error }: HomePro
           </aside>
 
           <section className="map-section" aria-label="Mars map">
-            <Map coordString={coordString} setCoordString={setCoordString} mapData={mapData} />
+            <Map
+              coordString={coordString}
+              setCoordString={setCoordString}
+              mapData={mapData}
+              finderMatches={finderMatches}
+            />
           </section>
         </div>
       </div>

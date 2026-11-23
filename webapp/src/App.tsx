@@ -9,10 +9,12 @@ import type { coordinateString, MapData } from './types';
 import Loading from './components/Loading';
 import { useMarsData } from './hooks/useMarsData';
 import { readCoordinateFromLocation, useCoordinateUrlSync } from './hooks/useUrlSync';
+import { EMPTY_FINDER_SESSION, type FinderSession } from './data/finderSession';
 
 // AG Grid and the breakthrough icons are only downloaded when their page is opened.
 const Finder = lazy(() => import('./sites/Finder'));
 const Breakthrough = lazy(() => import('./sites/Breakthrough'));
+const Compare = lazy(() => import('./sites/Compare'));
 
 const loadingMessages = [
   'Assigning idle drones to terraform...',
@@ -27,6 +29,7 @@ const loadingMessages = [
 
 const PAGE_TITLES: Record<string, string> = {
   '/finder': 'Finder',
+  '/compare': 'Compare',
   '/breakthrough': 'Breakthroughs',
   '/faq': 'FAQ',
 };
@@ -36,6 +39,8 @@ function AppShell() {
     readCoordinateFromLocation,
   );
   const { data: mapData, progress, error } = useMarsData();
+  // Finder filters survive page changes and feed the map's "Finder results" layer
+  const [finderSession, setFinderSession] = useState<FinderSession>(EMPTY_FINDER_SESSION);
   const { pathname } = useLocation();
 
   useCoordinateUrlSync(coordString, setCoordString);
@@ -65,13 +70,20 @@ function AppShell() {
                 mapData={mapData}
                 progress={progress}
                 error={error}
+                finderMatches={finderSession.matches}
               />
             }
           />
           <Route
             path="/finder"
             element={withData((data) => (
-              <Finder coordString={coordString} setCoordString={setCoordString} mapData={data} />
+              <Finder
+                coordString={coordString}
+                setCoordString={setCoordString}
+                mapData={data}
+                session={finderSession}
+                onSessionChange={setFinderSession}
+              />
             ))}
           />
           <Route
@@ -82,6 +94,12 @@ function AppShell() {
                 setCoordString={setCoordString}
                 mapData={data}
               />
+            ))}
+          />
+          <Route
+            path="/compare"
+            element={withData((data) => (
+              <Compare mapData={data} />
             ))}
           />
           <Route path="/faq" element={<FAQ />} />

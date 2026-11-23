@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { Link } from 'react-router';
 import type { coordinateString, MapData } from '../types';
 import './Breakthrough.css';
 import { computeBreakthroughTiers, formatBreakthroughName } from '../helper/BreakthroughTiers';
@@ -8,7 +8,16 @@ import BreakthroughTooltip from '../components/BreakthroughTooltip';
 import PageWrapper from '../components/PageWrapper';
 import CoordinateInput from '../components/CoordinateInput';
 import Clipboard from '../components/App/Clipboard';
-import { BREAKTHROUGH_PARAM, coordinateSearch } from '../hooks/useUrlSync';
+import CompareToggle from '../components/CompareToggle';
+import {
+  BREAKTHROUGH_PARAM,
+  breakthroughSearch,
+  coordinateSearch,
+  useSearchParam,
+} from '../hooks/useUrlSync';
+
+/** From this choice on, the game has usually changed the pool: shown as uncertain */
+const UNCERTAIN_FROM = 6;
 
 interface BreakthroughProps {
   coordString: coordinateString | null;
@@ -17,9 +26,8 @@ interface BreakthroughProps {
 }
 
 function Breakthrough({ coordString, setCoordString, mapData }: BreakthroughProps) {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [pathParam, setPathParam] = useSearchParam(BREAKTHROUGH_PARAM);
   const site = coordString ? mapData[coordString] : undefined;
-  const pathParam = searchParams.get(BREAKTHROUGH_PARAM);
 
   // The picked path lives in the URL (?bt=A,B,C) so a whole plan can be shared.
   // Anything that is not a valid choice for this site is dropped.
@@ -33,6 +41,16 @@ function Breakthrough({ coordString, setCoordString, mapData }: BreakthroughProp
     return { tiers: all.slice(0, valid + 1), activePath: requested.slice(0, valid) };
   }, [site, pathParam]);
 
+  // One more level: for each option of the open choice, what the choice after it offers.
+  const lookahead = useMemo(() => {
+    const open = tiers.at(-1);
+    if (!site || !open) return new Map<string, string[]>();
+    const seed = BigInt(site.xxhashShuffleBreakThroughTech);
+    return new Map(
+      open.map((tech) => [tech, computeBreakthroughTiers(seed, [...activePath, tech]).at(-1)!]),
+    );
+  }, [site, tiers, activePath]);
+
   // When a pick adds a new tier, bring it into view (the tree grows downwards).
   const listRef = useRef<HTMLOListElement>(null);
   const prevTierCount = useRef(tiers.length);
@@ -43,17 +61,7 @@ function Breakthrough({ coordString, setCoordString, mapData }: BreakthroughProp
     prevTierCount.current = tiers.length;
   }, [tiers.length]);
 
-  const setPath = (path: string[]) => {
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        if (path.length) next.set(BREAKTHROUGH_PARAM, path.join(','));
-        else next.delete(BREAKTHROUGH_PARAM);
-        return next;
-      },
-      { replace: true },
-    );
-  };
+  const setPath = (path: string[]) => setPathParam(path.join(','));
 
   const handleNodeClick = (techId: string, tierIndex: number) => {
     setPath([...activePath.slice(0, tierIndex), techId]);
@@ -69,8 +77,11 @@ function Breakthrough({ coordString, setCoordString, mapData }: BreakthroughProp
         <div className="Breakthrough-select-coordinate">
           <h1>Breakthrough Predictor</h1>
           <p>
-            Enter a coordinate or select a site on the <Link to="/">map</Link> to view its
-            breakthroughs.
+            Enter a coordinate or select a site on the{' '}
+            <Link className="panel-link" to="/">
+              map
+            </Link>{' '}
+            to view its breakthroughs.
           </p>
           {siteInput}
         </div>
@@ -86,7 +97,7 @@ function Breakthrough({ coordString, setCoordString, mapData }: BreakthroughProp
             {siteInput}
             <Clipboard
               copy={() =>
-                `${window.location.origin}/breakthrough${coordinateSearch(coordString, activePath.length ? { [BREAKTHROUGH_PARAM]: activePath.join(',') } : undefined)}`
+                `${window.location.origin}/breakthrough${breakthroughSearch(coordString, activePath)}`
               }
               label="Copy link to this breakthrough path"
               icon="link"
@@ -95,43 +106,83 @@ function Breakthrough({ coordString, setCoordString, mapData }: BreakthroughProp
           <p className="breakthrough-meta">
             {site.SiteName && <>{site.SiteName} · </>}
             {site.Topography} · Challenge {site.Difficulty}% ·{' '}
-            <Link to={{ pathname: '/', search: coordinateSearch(coordString) }}>Show on map</Link>
-          </p>
-          <p>
-            <span className="warning">Warning:</span> This Breakthrough predicter may be inaccurate.
-            Especially after the early game, when Planetary Anomalies, Researching Asteroids,
-            Wonders, etc. mix up the Breakthrough pool.
+            <Link
+              className="panel-link"
+              to={{ pathname: '/', search: coordinateSearch(coordString) }}
+            >
+              Show on map
+            </Link>
+            <CompareToggle site={coordString} variant="chip" />
           </p>
           <p className="breakthrough-help">
-            Pick one breakthrough per choice to see what is offered next.
+            Pick one breakthrough per choice. Below each option you see what the choice after it
+            would offer; click one of those to pick both.
           </p>
         </div>
 
         <ol className="anomaly-tree-container" ref={listRef}>
           {tiers.map((tierTechs, tierIndex) => {
-            if (tierTechs.length === 0) return null;
             const picked = activePath[tierIndex];
 
             return (
-              <li className="tree-tier" key={tierIndex}>
+              <li
+                className={`tree-tier${tierIndex + 1 >= UNCERTAIN_FROM ? ' uncertain' : ''}`}
+                key={tierIndex}
+              >
                 <h2 className="tier-title">Choice {tierIndex + 1}</h2>
+                {tierIndex + 1 === UNCERTAIN_FROM && (
+                  <p className="tier-warning">
+                    <span className="tier-warning-badge" aria-hidden="true">
+                      !
+                    </span>
+                    From here on the prediction may be inaccurate: after the early game, Planetary
+                    Anomalies, researching asteroids, Wonders etc. mix up the breakthrough pool.
+                  </p>
+                )}
                 <div className="tech-nodes">
                   {tierTechs.map((tech) => {
                     const classes = ['tech-node'];
                     if (picked === tech) classes.push('active');
                     else if (picked) classes.push('dimmed');
+                    const name = formatBreakthroughName(tech);
+                    const next = picked ? undefined : lookahead.get(tech);
                     return (
-                      <BreakthroughTooltip id={tech} key={tech}>
-                        <button
-                          type="button"
-                          className={classes.join(' ')}
-                          aria-pressed={picked === tech}
-                          onClick={() => handleNodeClick(tech, tierIndex)}
-                        >
-                          <img src={getBreakthroughImageSrc(tech)} alt="" className="tech-icon" />
-                          <span className="tech-name">{formatBreakthroughName(tech)}</span>
-                        </button>
-                      </BreakthroughTooltip>
+                      <div className="tech-option" key={tech}>
+                        <BreakthroughTooltip id={tech}>
+                          <button
+                            type="button"
+                            className={classes.join(' ')}
+                            aria-pressed={picked === tech}
+                            onClick={() => handleNodeClick(tech, tierIndex)}
+                          >
+                            <img src={getBreakthroughImageSrc(tech)} alt="" className="tech-icon" />
+                            <span className="tech-name">{name}</span>
+                          </button>
+                        </BreakthroughTooltip>
+                        {next && next.length > 0 && (
+                          <div className="tech-next" role="group" aria-label={`After ${name}`}>
+                            <span className="tech-next-label">then</span>
+                            {next.map((nextTech) => (
+                              <BreakthroughTooltip
+                                id={nextTech}
+                                key={nextTech}
+                                showWithoutDescription
+                              >
+                                <button
+                                  type="button"
+                                  className="tech-next-item"
+                                  aria-label={`Pick ${name}, then ${formatBreakthroughName(nextTech)}`}
+                                  onClick={() =>
+                                    setPath([...activePath.slice(0, tierIndex), tech, nextTech])
+                                  }
+                                >
+                                  <img src={getBreakthroughImageSrc(nextTech)} alt="" />
+                                </button>
+                              </BreakthroughTooltip>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>

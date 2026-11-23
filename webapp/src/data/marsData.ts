@@ -1,5 +1,6 @@
 import type { MapData, MapDataEntry } from '../types';
 import { coordinateTocoordinateString } from '../helper';
+import { createStore } from './store';
 
 // Reader for public/mars_data.bin (written by scripts/build-data.mjs; see there for the layout).
 
@@ -49,7 +50,10 @@ async function readWithProgress(
 
 async function gunzipIfNeeded(bytes: Uint8Array): Promise<ArrayBuffer> {
   // Some servers transparently decode .gz payloads; only decompress when the gzip magic is present.
-  if (bytes[0] !== 0x1f || bytes[1] !== 0x8b) return bytes.slice().buffer as ArrayBuffer;
+  if (bytes[0] !== 0x1f || bytes[1] !== 0x8b) {
+    const whole = bytes.byteOffset === 0 && bytes.byteLength === bytes.buffer.byteLength;
+    return (whole ? bytes.buffer : bytes.slice().buffer) as ArrayBuffer;
+  }
   const stream = new Blob([bytes as BlobPart])
     .stream()
     .pipeThrough(new DecompressionStream('gzip'));
@@ -66,14 +70,43 @@ function decode(buffer: ArrayBuffer): MapData {
     new TextDecoder().decode(new Uint8Array(buffer, 8, headerLength)),
   );
 
-  const cols: Record<string, ArrayLike<number | bigint>> = {};
+  const cols: Record<string, ArrayLike<number>> = {};
+  let hashes: BigInt64Array | null = null;
   for (const { name, type, offset } of header.columns) {
     const Ctor = TYPED_ARRAYS[type as keyof typeof TYPED_ARRAYS];
     if (!Ctor) throw new Error(`mars_data.bin: unsupported column type ${type}`);
-    cols[name] = new Ctor(buffer, offset, header.count);
+    const column = new Ctor(buffer, offset, header.count);
+    if (column instanceof BigInt64Array) hashes = column;
+    else cols[name] = column;
   }
+  if (!hashes) throw new Error('mars_data.bin: no Hash column');
 
-  const num = (name: string, i: number) => cols[name][i] as number;
+  // Column arrays read once here: 50,901 entries × 22 fields is the hot loop of startup.
+  const {
+    SiteName,
+    Topography,
+    MapTemplateID,
+    Altitude,
+    Temperature,
+    Difficulty,
+    MetalsBars,
+    ConcreteBars,
+    WaterBars,
+    DustDevilsBars,
+    DustStormBars,
+    MeteorBars,
+    ColdWaveBars,
+    Metals,
+    Concrete,
+    Water,
+    DustDevils,
+    DustStorm,
+    Meteor,
+    ColdWave,
+    Breakthrough0,
+    Breakthrough1,
+    Breakthrough2,
+  } = cols;
   const { dicts } = header;
   const [latMin, latMax] = header.lat;
   const [longMin, longMax] = header.long;
@@ -83,24 +116,31 @@ function decode(buffer: ArrayBuffer): MapData {
   for (let lat = latMin; lat <= latMax; lat++) {
     for (let long = longMin; long <= longMax; long++, i++) {
       const entry: MapDataEntry = {
-        SiteName: dicts.SiteName[num('SiteName', i)],
-        Topography: dicts.Topography[num('Topography', i)],
-        MapTemplateID: dicts.MapTemplateID[num('MapTemplateID', i)],
-        Altitude: num('Altitude', i),
-        Temperature: num('Temperature', i),
-        Difficulty: num('Difficulty', i),
-        MetalsBars: num('MetalsBars', i),
-        ConcreteBars: num('ConcreteBars', i),
-        WaterBars: num('WaterBars', i),
-        DustDevilsBars: num('DustDevilsBars', i),
-        DustStormBars: num('DustStormBars', i),
-        MeteorBars: num('MeteorBars', i),
-        ColdWaveBars: num('ColdWaveBars', i),
-        xxhashShuffleBreakThroughTech: (cols.Hash[i] as bigint).toString(),
+        SiteName: dicts.SiteName[SiteName[i]],
+        Topography: dicts.Topography[Topography[i]],
+        MapTemplateID: dicts.MapTemplateID[MapTemplateID[i]],
+        Altitude: Altitude[i],
+        Temperature: Temperature[i],
+        Difficulty: Difficulty[i],
+        MetalsBars: MetalsBars[i],
+        ConcreteBars: ConcreteBars[i],
+        WaterBars: WaterBars[i],
+        DustDevilsBars: DustDevilsBars[i],
+        DustStormBars: DustStormBars[i],
+        MeteorBars: MeteorBars[i],
+        ColdWaveBars: ColdWaveBars[i],
+        Metals: Metals[i],
+        Concrete: Concrete[i],
+        Water: Water[i],
+        DustDevils: DustDevils[i],
+        DustStorm: DustStorm[i],
+        Meteor: Meteor[i],
+        ColdWave: ColdWave[i],
+        xxhashShuffleBreakThroughTech: hashes[i].toString(),
         FirstBreakthroughs: [
-          dicts.Breakthrough[num('Breakthrough0', i)],
-          dicts.Breakthrough[num('Breakthrough1', i)],
-          dicts.Breakthrough[num('Breakthrough2', i)],
+          dicts.Breakthrough[Breakthrough0[i]],
+          dicts.Breakthrough[Breakthrough1[i]],
+          dicts.Breakthrough[Breakthrough2[i]],
         ],
       };
       data[coordinateTocoordinateString({ lat, long })] = entry;
@@ -110,13 +150,9 @@ function decode(buffer: ArrayBuffer): MapData {
 }
 
 let pending: Promise<MapData> | null = null;
-let lastProgress = 0;
-const progressListeners = new Set<(percent: number) => void>();
-
-function reportProgress(percent: number) {
-  lastProgress = percent;
-  progressListeners.forEach((listener) => listener(percent));
-}
+/** Download progress, 0–100 */
+const progress = createStore(0);
+export const useMarsDataProgress = progress.useValue;
 
 /**
  * Resolves once the browser has painted a frame, so that decoding the data never
@@ -130,30 +166,28 @@ function afterNextPaint(): Promise<void> {
   });
 }
 
+/** Decodes the raw (optionally gzipped) bytes of mars_data.bin */
+export async function parseMarsData(bytes: Uint8Array): Promise<MapData> {
+  return decode(await gunzipIfNeeded(bytes));
+}
+
 /** Downloads and decodes the site database once; later calls share the same promise. */
 export function loadMarsData(): Promise<MapData> {
   pending ??= (async () => {
     // Low priority: the page's own code, styles and the globe texture come first.
     const response = await fetch('/mars_data.bin', { priority: 'low' });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    const bytes = await readWithProgress(response, reportProgress);
+    const bytes = await readWithProgress(response, progress.set);
     const buffer = await gunzipIfNeeded(bytes);
     await afterNextPaint();
     performance.mark('mars-data:decode-start');
     const data = decode(buffer);
     performance.measure('mars-data:decode', 'mars-data:decode-start');
-    reportProgress(100);
+    progress.set(100);
     return data;
   })();
   pending.catch(() => {
     pending = null;
   });
   return pending;
-}
-
-/** Subscribes to download progress (0–100). Returns an unsubscribe function. */
-export function onMarsDataProgress(listener: (percent: number) => void): () => void {
-  progressListeners.add(listener);
-  listener(lastProgress);
-  return () => progressListeners.delete(listener);
 }

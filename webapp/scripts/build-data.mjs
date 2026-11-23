@@ -12,16 +12,17 @@ import { gzipSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { TechBreakthroughList } from '../src/helper/TechBreakthroughList.ts';
 import { computeBreakthroughTiers } from '../src/helper/BreakthroughTiers.ts';
-import { coordinateTocoordinateString } from '../src/helper.ts';
+import { coordinateTocoordinateString, LAT_LIMIT, LONG_LIMIT } from '../src/helper.ts';
+import { RESOURCES, THREATS } from '../src/data/attributes.ts';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const csvPath = `${root}public/mars_data.csv`;
 const outPath = `${root}public/mars_data.bin`;
 
-const LAT_MIN = -70,
-  LAT_MAX = 70,
-  LONG_MIN = -180,
-  LONG_MAX = 180;
+const LAT_MIN = -LAT_LIMIT,
+  LAT_MAX = LAT_LIMIT,
+  LONG_MIN = -LONG_LIMIT,
+  LONG_MAX = LONG_LIMIT;
 const WIDTH = LONG_MAX - LONG_MIN + 1;
 const COUNT = (LAT_MAX - LAT_MIN + 1) * WIDTH;
 
@@ -33,45 +34,32 @@ const col = (name) => {
   return i;
 };
 
+// One byte each: the 1–4 bars, then the raw 0–255 values behind them (heatmaps, match).
+const ATTRIBUTES = [...RESOURCES, ...THREATS];
+const BYTE_COLUMNS = [...ATTRIBUTES.map((a) => a.bars), ...ATTRIBUTES.map((a) => a.raw)];
+const DICT_COLUMNS = ['SiteName', 'Topography', 'MapTemplateID'];
+
+/** Index of every CSV column that is read */
 const C = Object.fromEntries(
   [
     'Coords',
     'Lat',
     'Long',
     'xxhashShuffleBreakThroughTech',
-    'SiteName',
-    'Topography',
     'Altitude',
     'Temperature',
     'Difficulty',
-    'MetalsBars',
-    'ConcreteBars',
-    'WaterBars',
-    'DustDevilsBars',
-    'DustStormBars',
-    'MeteorBars',
-    'ColdWaveBars',
-    'MapTemplateID',
+    ...BYTE_COLUMNS,
+    ...DICT_COLUMNS,
   ].map((n) => [n, col(n)]),
 );
-
-const BAR_COLUMNS = [
-  'MetalsBars',
-  'ConcreteBars',
-  'WaterBars',
-  'DustDevilsBars',
-  'DustStormBars',
-  'MeteorBars',
-  'ColdWaveBars',
-];
-const DICT_COLUMNS = ['SiteName', 'Topography', 'MapTemplateID'];
 
 const columns = {
   Hash: new BigInt64Array(COUNT),
   Altitude: new Int16Array(COUNT),
   Temperature: new Int8Array(COUNT),
   Difficulty: new Uint16Array(COUNT),
-  ...Object.fromEntries(BAR_COLUMNS.map((n) => [n, new Uint8Array(COUNT)])),
+  ...Object.fromEntries(BYTE_COLUMNS.map((n) => [n, new Uint8Array(COUNT)])),
   ...Object.fromEntries(DICT_COLUMNS.map((n) => [n, new Uint8Array(COUNT)])),
   Breakthrough0: new Uint8Array(COUNT),
   Breakthrough1: new Uint8Array(COUNT),
@@ -113,7 +101,7 @@ for (let r = 1; r < lines.length; r++) {
   columns.Altitude[i] = checkedInt(f[C.Altitude], -32768, 32767, 'Altitude');
   columns.Temperature[i] = checkedInt(f[C.Temperature], -128, 127, 'Temperature');
   columns.Difficulty[i] = checkedInt(f[C.Difficulty], 0, 65535, 'Difficulty');
-  for (const n of BAR_COLUMNS) columns[n][i] = checkedInt(f[C[n]], 0, 255, n);
+  for (const n of BYTE_COLUMNS) columns[n][i] = checkedInt(f[C[n]], 0, 255, n);
   for (const n of DICT_COLUMNS) columns[n][i] = dictIndex(n, f[C[n]].trim());
 
   const [firstTier] = computeBreakthroughTiers(hash);

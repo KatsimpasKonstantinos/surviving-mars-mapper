@@ -37,16 +37,16 @@
 
     .breakthrough-meta {
       color: var(--color-text-secondary);
+
+      .CompareToggle {
+        margin-inline-start: 10px;
+        vertical-align: 1px;
+      }
     }
 
     .breakthrough-help {
       color: var(--color-text-secondary);
       font-size: 0.9rem;
-    }
-
-    .warning {
-      color: var(--color-primary);
-      font-weight: bold;
     }
 
     /* ---- Tree ---- */
@@ -66,6 +66,50 @@
       align-items: center;
       inline-size: 100%;
       animation: tier-in 0.25s ease-out;
+    }
+
+    /* Later choices: signal yellow, the prediction gets unreliable */
+    .tree-tier.uncertain {
+      padding: 10px 12px 12px;
+      /* On light backgrounds pure yellow fades away, so frame it in a darker yellow there */
+      --signal-line: light-dark(
+        color-mix(in srgb, var(--color-accent) 55%, black),
+        color-mix(in srgb, var(--color-accent) 50%, transparent)
+      );
+      background: light-dark(
+        color-mix(in srgb, var(--color-accent) 22%, transparent),
+        color-mix(in srgb, var(--color-accent) 10%, transparent)
+      );
+      border: 1px solid var(--signal-line);
+      border-radius: var(--radius);
+
+      .tier-title::before,
+      .tier-title::after {
+        background: var(--signal-line);
+      }
+    }
+
+    .tier-warning {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 10px;
+      color: var(--color-text);
+      font-size: 0.9rem;
+      line-height: 1.35;
+      text-align: start;
+    }
+
+    .tier-warning-badge {
+      display: grid;
+      flex-shrink: 0;
+      place-items: center;
+      inline-size: 1.5em;
+      block-size: 1.5em;
+      background: var(--color-accent);
+      color: black;
+      border-radius: 50%;
+      font-weight: bold;
     }
 
     /* "— CHOICE 1 —" with hairlines on both sides */
@@ -98,13 +142,22 @@
       inline-size: 100%;
     }
 
+    /* One option: the breakthrough plus a preview of the choice after it */
+    .tech-option {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      gap: 6px;
+      min-inline-size: 0;
+      max-inline-size: 200px;
+    }
+
     .tech-node {
       display: flex;
       flex: 1;
       flex-direction: column;
       align-items: center;
       gap: 6px;
-      max-inline-size: 200px;
       padding: 8px;
       background: var(--hover);
       color: var(--color-text);
@@ -136,6 +189,49 @@
 
       &.dimmed {
         opacity: 0.35;
+      }
+    }
+
+    .tech-next {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      padding: 3px 6px;
+      border: 1px dashed var(--border-strong);
+      border-radius: var(--radius-sm);
+      animation: tier-in 0.25s ease-out;
+    }
+
+    .tech-next-label {
+      margin-inline-end: 4px;
+      color: var(--color-text-secondary);
+      font-family: var(--font-subheading);
+      font-size: 0.8rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .tech-next-item {
+      display: grid;
+      place-items: center;
+      padding: 2px;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition-property: background-color, border-color;
+      transition-duration: var(--transition-duration);
+
+      img {
+        inline-size: 36px;
+        block-size: 36px;
+        object-fit: contain;
+      }
+
+      &:hover {
+        background: color-mix(in srgb, var(--color-secondary) 8%, transparent);
+        border-color: var(--color-secondary);
       }
     }
 
@@ -173,11 +269,18 @@
         align-items: center;
       }
 
-      .tech-node {
-        flex-direction: row;
+      .tech-option {
         inline-size: 100%;
         max-inline-size: none;
+      }
+
+      .tech-node {
+        flex-direction: row;
         text-align: start;
+      }
+
+      .tech-next {
+        justify-content: flex-start;
       }
 
       .tech-icon {
@@ -200,14 +303,6 @@
 
     h1 {
       font-family: var(--font-heading);
-    }
-  }
-
-  :is(.Breakthrough .breakthrough-meta, .Breakthrough-select-coordinate) a {
-    color: var(--color-secondary);
-
-    &:hover {
-      text-decoration: underline;
     }
   }
 }

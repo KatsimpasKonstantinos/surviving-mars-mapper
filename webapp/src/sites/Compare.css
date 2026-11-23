@@ -1,0 +1,182 @@
+@layer components {
+  .Compare {
+    inline-size: min(1100px, calc(100% - 32px));
+    margin: 24px auto;
+    text-align: start;
+
+    h1 {
+      margin: 0;
+      font-family: var(--font-heading);
+    }
+
+    .compare-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-block-end: 16px;
+
+      .compare-clear {
+        margin-inline-start: auto;
+      }
+    }
+
+    .compare-empty {
+      margin-block-start: 16px;
+      padding: 8px 24px;
+
+      a {
+        color: var(--color-secondary);
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+
+    /* Wide tables scroll sideways on small screens instead of squeezing */
+    .compare-scroll {
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+
+    .compare-table {
+      inline-size: 100%;
+      border-collapse: collapse;
+
+      th,
+      td {
+        padding: 10px 16px;
+        border-block-end: 1px solid var(--border);
+        vertical-align: middle;
+      }
+
+      tbody tr:last-child :is(th, td) {
+        border-block-end: none;
+      }
+
+      thead th {
+        min-inline-size: 170px;
+        vertical-align: top;
+        text-align: start;
+      }
+
+      tbody th {
+        color: var(--color-text-secondary);
+        font-weight: normal;
+        white-space: nowrap;
+        text-align: start;
+      }
+
+      td {
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* Best value in a row */
+      td.best {
+        background: color-mix(in srgb, var(--color-secondary) 14%, transparent);
+        color: var(--color-secondary);
+        font-weight: 600;
+      }
+    }
+
+    /* Match: the shared ScoreBar, a bit larger */
+    .ScoreBar {
+      max-inline-size: 160px;
+      font-size: 1.1rem;
+    }
+
+    .compare-row-link {
+      display: block;
+      font-size: 0.8rem;
+    }
+
+    .compare-corner {
+      color: var(--color-text-secondary);
+      font-weight: normal;
+      font-size: 0.85rem;
+    }
+
+    .compare-site {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .compare-coord {
+      font-family: var(--font-subheading);
+      font-size: 1.25rem;
+
+      &:hover {
+        color: var(--color-secondary);
+      }
+    }
+
+    .compare-name {
+      color: var(--color-secondary);
+      font-weight: normal;
+      font-size: 0.9rem;
+    }
+
+    .compare-remove {
+      display: grid;
+      place-items: center;
+      inline-size: 26px;
+      block-size: 26px;
+      padding: 0;
+      background: none;
+      color: var(--color-text-secondary);
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+
+      &:hover {
+        background: var(--hover);
+        color: var(--color-primary);
+      }
+
+      svg {
+        inline-size: 15px;
+        block-size: 15px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+      }
+    }
+
+    .compare-thumb {
+      inline-size: 140px;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      border-radius: var(--radius-sm);
+    }
+
+    .compare-breakthroughs {
+      display: flex;
+      gap: 6px;
+
+      a {
+        display: block;
+        border-radius: var(--radius-sm);
+        transition: scale var(--transition-duration) ease;
+
+        &:hover {
+          scale: 1.1;
+        }
+      }
+
+      img {
+        inline-size: 36px;
+        block-size: 36px;
+        object-fit: contain;
+      }
+    }
+
+    .compare-note {
+      margin-block-start: 12px;
+      color: var(--color-text-secondary);
+      font-size: 0.9rem;
+    }
+  }
+}

@@ -66,7 +66,7 @@ import AutonomousHubs from '../assets/Breakthroughs/autonomous_hubs.webp';
 import FactoryAutomation from '../assets/Breakthroughs/factory_automation.webp';
 import GemArchitecture from '../assets/Breakthroughs/gem_architecture.webp';
 
-export const BreakthroughPreviewDictionary = {
+const BreakthroughPreviewDictionary = {
   AncientTerraformingDevice: AncientTerraformingDevice,
   DesignedForestation: DesignedForestation,
   LakeVaporators: LakeVaporators,

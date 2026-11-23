@@ -1,0 +1,145 @@
+@layer components {
+  .ScoreWeights {
+    container: weights / inline-size;
+    padding: 16px 20px;
+    text-align: start;
+
+    /* ---- Presets ---- */
+    .sw-presets {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      margin-block-end: 14px;
+      padding-block-end: 12px;
+      border-block-end: 1px solid var(--border);
+
+      .card-label {
+        margin: 0 6px 0 0;
+      }
+    }
+
+    .sw-preset {
+      padding: 3px 12px;
+      background: transparent;
+      color: var(--color-text-secondary);
+      border: 1px solid var(--border-strong);
+      border-radius: 999px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition-property: background-color, border-color, color;
+      transition-duration: var(--transition-duration);
+
+      &:hover {
+        color: var(--color-text);
+      }
+
+      &.active {
+        background: var(--color-primary);
+        border-color: var(--color-primary);
+        color: white;
+      }
+
+      /* "Custom" is a status, not a button */
+      &.custom {
+        cursor: default;
+
+        &:not(.active) {
+          border-style: dashed;
+          opacity: 0.6;
+        }
+      }
+    }
+
+    /* ---- Criteria: name | less | ‹‹ ‹ · › ›› | more, aligned per group ---- */
+    .sw-groups {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px 32px;
+    }
+
+    .sw-group {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      align-content: start;
+      column-gap: 8px;
+
+      .card-label {
+        grid-column: 1 / -1;
+        margin-block-end: 8px;
+      }
+    }
+
+    .sw-row {
+      display: grid;
+      grid-column: 1 / -1;
+      grid-template-columns: subgrid;
+      align-items: center;
+      padding-block: 3px;
+    }
+
+    .sw-name {
+      white-space: nowrap;
+    }
+
+    .sw-end {
+      color: var(--color-text-secondary);
+      font-size: 0.8rem;
+
+      &.sw-less {
+        text-align: end;
+      }
+    }
+
+    /* Shared .segmented look, a little wider; "ignore" chosen is a neutral pill, not red */
+    .sw-levels > button {
+      min-inline-size: 2em;
+      padding: 1px 6px;
+      font-size: 0.85rem;
+      line-height: 1.4;
+
+      &.off {
+        background: var(--border-strong);
+        color: var(--color-text);
+      }
+    }
+
+    .sw-footer {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-block-start: 14px;
+      padding-block-start: 12px;
+      border-block-start: 1px solid var(--border);
+      color: var(--color-text-secondary);
+      font-size: 0.9rem;
+
+      > span {
+        margin-inline-end: auto;
+      }
+
+      a[aria-disabled='true'] {
+        opacity: 0.4;
+        pointer-events: none;
+      }
+    }
+
+    /* One column: all groups share one grid, so every scale lines up */
+    @container weights (width < 1100px) {
+      .sw-groups {
+        grid-template-columns: 1fr auto auto auto;
+        gap: 0 8px;
+        max-inline-size: 480px;
+      }
+
+      .sw-group {
+        display: contents;
+
+        &:not(:first-child) .card-label {
+          margin-block-start: 12px;
+        }
+      }
+    }
+  }
+}

@@ -5,16 +5,24 @@ import {
   useEffect,
   useMemo,
   useCallback,
+  useEffectEvent,
   type ComponentRef,
 } from 'react';
-import { Canvas, useLoader, useFrame, useThree } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import type { ThreeEvent } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import { OrbitControls, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import imageMars from '../../assets/mars.webp';
 import type { coordinate, coordinateString } from '../../types';
 import { coordinateTocoordinateString, coordinateStringTocoordinate } from '../../helper';
-import { getMapImageSrc } from '../../helper/MapPreview';
+import {
+  coordinateToUv,
+  GRID_HEIGHT,
+  GRID_WIDTH,
+  OVERLAY_V_MAX,
+  OVERLAY_V_MIN,
+  uvToCoordinate,
+} from '../../data/heatmap';
 import './GlobeMap.css';
 
 /* ------------------------------------------------------------------ */
@@ -22,7 +30,10 @@ import './GlobeMap.css';
 /* ------------------------------------------------------------------ */
 
 const SPHERE_RADIUS = 0.8;
-const MARKER_SURFACE_OFFSET = 0.0025;
+// Just enough to stay above the mesh: its flat facets sit at most ~0.00024 below the true
+// sphere, and polygonOffset handles depth. Any higher and the marker drifts off its cell
+// by parallax when seen at an angle (a cell is only ~0.012 wide).
+const MARKER_SURFACE_OFFSET = 0.0003;
 const GRID_SEGMENTS_X = 128;
 const GRID_SEGMENTS_Y = 64;
 const CAMERA_FOV = 45;
@@ -66,9 +77,9 @@ void main() {
     vec4 baseColor = texture2D(baseMap, vUv);
 
     if (hasOverlay) {
-        // Heatmap covers the ±70° latitude band -> UV v in [0.1, 0.9]
-        float vMin = 0.1;
-        float vMax = 0.9;
+        // Heatmap covers the ±70° latitude band (OVERLAY_V_MIN…OVERLAY_V_MAX in heatmap.ts)
+        float vMin = ${OVERLAY_V_MIN.toFixed(4)};
+        float vMax = ${OVERLAY_V_MAX.toFixed(4)};
 
         if (vUv.y >= vMin && vUv.y <= vMax) {
             float remappedV = (vUv.y - vMin) / (vMax - vMin);
@@ -126,35 +137,6 @@ function smoothstep(edge0: number, edge1: number, x: number): number {
   return t * t * (3 - 2 * t);
 }
 
-/**
- * Convert texture UV (u, v) directly to Surviving Mars coordinates.
- * Matches the 2D map & shader 10%–90% active latitude band pixel-for-pixel.
- */
-function uvToCoordinate(u: number, v: number): coordinate {
-  const percentX = THREE.MathUtils.clamp(u, 0, 1);
-  const percentY = THREE.MathUtils.clamp(1 - v, 0, 1);
-  const activePercentY = THREE.MathUtils.clamp((percentY - 0.1) / 0.8, 0, 1);
-
-  const lat = Math.round(activePercentY * 140 - 70);
-  const long = Math.round(percentX * 360 - 180);
-
-  return {
-    lat: THREE.MathUtils.clamp(lat, -70, 70),
-    long: THREE.MathUtils.clamp(long, -180, 180),
-  };
-}
-
-/**
- * Convert Surviving Mars coordinates to exact texture UV (u, v).
- */
-function coordinateToUv(coord: coordinate): { u: number; v: number } {
-  const u = (coord.long + 180) / 360;
-  const activePercentY = (coord.lat + 70) / 140;
-  const percentY = 0.1 + activePercentY * 0.8;
-  const v = 1 - percentY;
-  return { u, v };
-}
-
 /** Camera orientation (polar angle phi, azimuth theta) that looks straight at a coordinate. */
 function sphericalFacing(coord: coordinate, radius: number): THREE.Spherical {
   const { u, v } = coordinateToUv(coord);
@@ -165,25 +147,26 @@ function sphericalFacing(coord: coordinate, radius: number): THREE.Spherical {
   );
 }
 
+/** Fold factors of one point, reused to avoid allocating per vertex and frame */
+const fold = { tx: 0, ty: 0 };
+
 /**
- * Compute staged horizontal (tx) and vertical (ty) fold factors for a given UV.
+ * Compute staged horizontal (tx) and vertical (ty) fold factors for a given UV into `fold`.
  * Creates an origami-like wave where longitude wraps slightly ahead of latitude
  * and ripples outward from the center of the map.
  */
-function getStagedMorphFactors(u: number, v: number, t: number): { tx: number; ty: number } {
-  if (t <= 0) return { tx: 0, ty: 0 };
-  if (t >= 1) return { tx: 1, ty: 1 };
-
+function stagedMorphFactors(u: number, v: number, t: number): void {
+  if (t <= 0 || t >= 1) {
+    fold.tx = fold.ty = t <= 0 ? 0 : 1;
+    return;
+  }
   // Distance from center [0, ~0.7] creates a spatial ripple across the mesh
   const distX = Math.abs(u - 0.5);
   const distY = Math.abs(v - 0.5);
-
   // Longitude curls first, starting from the outer edges inward
-  const tx = smoothstep(0.0, 0.82, t + (0.5 - distX) * 0.12 * Math.sin(t * Math.PI));
+  fold.tx = smoothstep(0.0, 0.82, t + (0.5 - distX) * 0.12 * Math.sin(t * Math.PI));
   // Latitude cinches the poles second, creating a cylinder -> sphere progression
-  const ty = smoothstep(0.18, 1.0, t - distY * 0.1 * Math.sin(t * Math.PI));
-
-  return { tx, ty };
+  fold.ty = smoothstep(0.18, 1.0, t - distY * 0.1 * Math.sin(t * Math.PI));
 }
 
 /**
@@ -197,39 +180,43 @@ function evaluateSurface(
   planeWidth: number,
   planeHeight: number,
   outPos: THREE.Vector3,
-  outNormal?: THREE.Vector3,
+  outNormal: THREE.Vector3,
 ): void {
   const lambda = (u - 0.5) * Math.PI * 2; // [-pi, pi]
   const psi = (v - 0.5) * Math.PI; // [-pi/2, pi/2]
 
-  const { tx, ty } = getStagedMorphFactors(u, v, t);
+  stagedMorphFactors(u, v, t);
+  const { tx, ty } = fold;
 
   const lt = lambda * tx;
   const pt = psi * ty;
-
   const cosPt = Math.cos(pt);
-  const sinPt = Math.sin(pt);
 
   const scaleX = THREE.MathUtils.lerp(planeWidth / (Math.PI * 2), SPHERE_RADIUS, tx);
   const scaleY = THREE.MathUtils.lerp(planeHeight / Math.PI, SPHERE_RADIUS, ty);
 
   // Subtle organic wave ripple perpendicular to the surface mid-transition
-  const wavePulse = Math.sin(t * Math.PI);
-  const ripple = Math.sin(lambda * 2.0 + t * Math.PI * 2.0) * 0.035 * wavePulse;
+  const ripple = Math.sin(lambda * 2.0 + t * Math.PI * 2.0) * 0.035 * Math.sin(t * Math.PI);
 
-  const x = cosPt * lambda * sinc(lt) * scaleX;
-  const y = psi * sinc(pt) * scaleY;
-  const z = SPHERE_RADIUS * (cosPt * Math.cos(lt) - 1.0 + tx) + ripple;
-
-  outPos.set(x, y, z);
-
-  if (outNormal) {
-    outNormal.set(cosPt * Math.sin(lt), sinPt, cosPt * Math.cos(lt)).normalize();
-  }
+  outPos.set(
+    cosPt * lambda * sinc(lt) * scaleX,
+    psi * sinc(pt) * scaleY,
+    SPHERE_RADIUS * (cosPt * Math.cos(lt) - 1.0 + tx) + ripple,
+  );
+  // Analytical outward normal (already unit length) for smooth Fresnel lighting
+  outNormal.set(cosPt * Math.sin(lt), Math.sin(pt), cosPt * Math.cos(lt));
 }
+
+// Scratch vectors, so the per-frame updates allocate nothing
+const vertexPos = new THREE.Vector3();
+const vertexNormal = new THREE.Vector3();
+const markerPos = new THREE.Vector3();
+const markerNormal = new THREE.Vector3();
+const Z_AXIS = new THREE.Vector3(0, 0, 1);
 
 /**
  * Update all vertices and normals of the grid geometry for a given morph factor t in [0, 1].
+ * Bounds (for picking) are only recomputed at rest; nothing can be picked mid-transition.
  */
 function updateMorphedGeometry(
   geometry: THREE.BufferGeometry,
@@ -241,51 +228,26 @@ function updateMorphedGeometry(
   const normAttr = geometry.attributes.normal as THREE.BufferAttribute;
   const uvAttr = geometry.attributes.uv as THREE.BufferAttribute;
 
-  const posArr = posAttr.array as Float32Array;
-  const normArr = normAttr.array as Float32Array;
-  const uvArr = uvAttr.array as Float32Array;
-  const count = posAttr.count;
-
-  const wavePulse = Math.sin(t * Math.PI);
-
-  for (let i = 0; i < count; i++) {
-    const u = uvArr[i * 2];
-    const v = uvArr[i * 2 + 1];
-
-    const lambda = (u - 0.5) * Math.PI * 2;
-    const psi = (v - 0.5) * Math.PI;
-
-    const { tx, ty } = getStagedMorphFactors(u, v, t);
-
-    const lt = lambda * tx;
-    const pt = psi * ty;
-    const cosPt = Math.cos(pt);
-    const sinPt = Math.sin(pt);
-
-    const scaleX = THREE.MathUtils.lerp(planeWidth / (Math.PI * 2), SPHERE_RADIUS, tx);
-    const scaleY = THREE.MathUtils.lerp(planeHeight / Math.PI, SPHERE_RADIUS, ty);
-
-    const ripple = Math.sin(lambda * 2.0 + t * Math.PI * 2.0) * 0.035 * wavePulse;
-
-    posArr[i * 3] = cosPt * lambda * sinc(lt) * scaleX;
-    posArr[i * 3 + 1] = psi * sinc(pt) * scaleY;
-    posArr[i * 3 + 2] = SPHERE_RADIUS * (cosPt * Math.cos(lt) - 1.0 + tx) + ripple;
-
-    // Analytical outward unit normal for smooth Fresnel lighting
-    const nx = cosPt * Math.sin(lt);
-    const ny = sinPt;
-    const nz = cosPt * Math.cos(lt);
-    const invLen = 1.0 / Math.hypot(nx, ny, nz);
-
-    normArr[i * 3] = nx * invLen;
-    normArr[i * 3 + 1] = ny * invLen;
-    normArr[i * 3 + 2] = nz * invLen;
+  for (let i = 0; i < posAttr.count; i++) {
+    evaluateSurface(
+      uvAttr.getX(i),
+      uvAttr.getY(i),
+      t,
+      planeWidth,
+      planeHeight,
+      vertexPos,
+      vertexNormal,
+    );
+    posAttr.setXYZ(i, vertexPos.x, vertexPos.y, vertexPos.z);
+    normAttr.setXYZ(i, vertexNormal.x, vertexNormal.y, vertexNormal.z);
   }
 
   posAttr.needsUpdate = true;
   normAttr.needsUpdate = true;
-  geometry.computeBoundingSphere();
-  geometry.computeBoundingBox();
+  if (t <= 0 || t >= 1) {
+    geometry.computeBoundingSphere();
+    geometry.computeBoundingBox();
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -296,7 +258,8 @@ interface MarsSceneProps {
   viewMode: '2d' | '3d';
   coordString: coordinateString | null;
   setCoordString: (coordStr: coordinateString | null) => void;
-  activeOverlay: string;
+  /** Heatmap colours, one RGBA texel per site (GRID_WIDTH × GRID_HEIGHT), or null */
+  overlayPixels: Uint8Array | null;
   overlayOpacity: number;
   autoRotate: boolean;
   onInteract: () => void;
@@ -307,7 +270,7 @@ function MarsScene({
   viewMode,
   coordString,
   setCoordString,
-  activeOverlay,
+  overlayPixels,
   overlayOpacity,
   autoRotate,
   onInteract,
@@ -320,7 +283,10 @@ function MarsScene({
   const outerRingRef = useRef<THREE.Mesh>(null);
   const controlsRef = useRef<ComponentRef<typeof OrbitControls>>(null);
 
-  const [coordinate, setCoordinate] = useState<coordinate | null>(null);
+  const coordinate = useMemo<coordinate | null>(
+    () => (coordString ? coordinateStringTocoordinate(coordString) : null),
+    [coordString],
+  );
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   // Base grid geometry (128x64 subdivisions)
@@ -363,11 +329,6 @@ function MarsScene({
   const flyRef = useRef<{ from: THREE.Spherical; to: THREE.Spherical; t: number } | null>(null);
   const lastPickedRef = useRef<coordinateString | null>(null);
 
-  // Scratch vectors to avoid allocations in useFrame
-  const tmpPos = useMemo(() => new THREE.Vector3(), []);
-  const tmpNormal = useMemo(() => new THREE.Vector3(), []);
-  const zAxis = useMemo(() => new THREE.Vector3(0, 0, 1), []);
-
   /* ---------- Helper to place HexMarker on surface ---------- */
 
   const syncMarkerTransform = useCallback(
@@ -376,28 +337,27 @@ function MarsScene({
       if (!group || !coord) return;
 
       const { u, v } = coordinateToUv(coord);
-      evaluateSurface(u, v, t, width, height, tmpPos, tmpNormal);
+      evaluateSurface(u, v, t, width, height, markerPos, markerNormal);
 
       // Hover the reticle slightly above the surface mid-transition ("orbital lock-on")
       const transitionLift = Math.sin(t * Math.PI) * 0.08;
-      tmpPos.addScaledVector(tmpNormal, MARKER_SURFACE_OFFSET + transitionLift);
-      group.position.copy(tmpPos);
-      group.quaternion.setFromUnitVectors(zAxis, tmpNormal);
+      markerPos.addScaledVector(markerNormal, MARKER_SURFACE_OFFSET + transitionLift);
+      group.position.copy(markerPos);
+      group.quaternion.setFromUnitVectors(Z_AXIS, markerNormal);
 
       // Slightly larger reticle on flat 2D map + subtle scale pop mid-flight
       const baseScale = THREE.MathUtils.lerp(1.45, 1.0, t);
       const popScale = 1.0 + Math.sin(t * Math.PI) * 0.35;
       group.scale.setScalar(baseScale * popScale);
     },
-    [tmpPos, tmpNormal, zAxis],
+    [],
   );
 
   /* ---------- Textures ---------- */
 
-  const marsTexture = useLoader(THREE.TextureLoader, imageMars);
-  useMemo(() => {
-    marsTexture.colorSpace = THREE.SRGBColorSpace;
-  }, [marsTexture]);
+  const marsTexture = useTexture(imageMars, (texture) => {
+    texture.colorSpace = THREE.SRGBColorSpace;
+  });
 
   const blankTexture = useMemo(() => {
     const t = new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1, THREE.RGBAFormat);
@@ -405,52 +365,31 @@ function MarsScene({
     return t;
   }, []);
 
-  const [overlayTexture, setOverlayTexture] = useState<THREE.Texture | null>(null);
+  const overlayTexture = useMemo(() => {
+    if (!overlayPixels) return null;
+    const texture = new THREE.DataTexture(overlayPixels, GRID_WIDTH, GRID_HEIGHT, THREE.RGBAFormat);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    // One texel per site: keep the cells sharp, like the game's own overlay
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+    texture.needsUpdate = true;
+    return texture;
+  }, [overlayPixels]);
 
-  useEffect(() => {
-    let aborted = false;
-
-    if (activeOverlay === 'None') {
-      setOverlayTexture((prev) => {
-        prev?.dispose();
-        return null;
-      });
-      return;
-    }
-
-    const url = getMapImageSrc(activeOverlay);
-    new THREE.TextureLoader().load(url, (tex) => {
-      if (aborted) {
-        tex.dispose();
-        return;
-      }
-      tex.colorSpace = THREE.SRGBColorSpace;
-      setOverlayTexture((prev) => {
-        prev?.dispose();
-        return tex;
-      });
-    });
-
-    return () => {
-      aborted = true;
-    };
-  }, [activeOverlay]);
+  useEffect(() => () => overlayTexture?.dispose(), [overlayTexture]);
 
   /* ---------- Shader Uniforms ---------- */
 
-  const uniforms = useMemo(
-    () => ({
-      baseMap: { value: marsTexture },
-      overlayMap: { value: blankTexture },
-      overlayOpacity: { value: overlayOpacity },
-      hasOverlay: { value: false },
-      uMorph: { value: viewMode === '3d' ? 1.0 : 0.0 },
-      uTransitionPulse: { value: 0.0 },
-      uScanlinePos: { value: 0.0 },
-    }),
-    // oxlint-disable-next-line react-hooks/exhaustive-deps
-    [marsTexture, blankTexture],
-  );
+  // Created once; the effect below and useFrame update the values in place.
+  const [uniforms] = useState(() => ({
+    baseMap: { value: marsTexture },
+    overlayMap: { value: blankTexture },
+    overlayOpacity: { value: overlayOpacity },
+    hasOverlay: { value: false },
+    uMorph: { value: viewMode === '3d' ? 1.0 : 0.0 },
+    uTransitionPulse: { value: 0.0 },
+    uScanlinePos: { value: 0.0 },
+  }));
 
   useEffect(() => {
     const m = materialRef.current;
@@ -464,17 +403,14 @@ function MarsScene({
   /* ---------- Coordinate Sync ---------- */
 
   useEffect(() => {
-    const parsed = coordString ? coordinateStringTocoordinate(coordString) : null;
-    setCoordinate(parsed);
-    syncMarkerTransform(parsed, morphRef.current, planeDims.width, planeDims.height);
-  }, [coordString, planeDims.width, planeDims.height, syncMarkerTransform]);
+    syncMarkerTransform(coordinate, morphRef.current, planeDims.width, planeDims.height);
+  }, [coordinate, planeDims.width, planeDims.height, syncMarkerTransform]);
 
-  useEffect(() => {
-    if (!coordString || coordString === lastPickedRef.current) return;
-    lastPickedRef.current = coordString;
+  // Reads the current view without re-running when only the view changes:
+  // switching views has its own camera animation.
+  const flyTo = useEffectEvent((coord: coordinateString) => {
     if (viewMode !== '3d') return;
-
-    const target = coordinateStringTocoordinate(coordString);
+    const target = coordinateStringTocoordinate(coord);
     if (!target) return;
 
     const from = new THREE.Spherical().setFromVector3(camera.position);
@@ -485,9 +421,13 @@ function MarsScene({
 
     flyRef.current = { from, to, t: 0 };
     onInteract();
-    // viewMode is intentionally not a dependency: switching views has its own camera animation.
-    // oxlint-disable-next-line react-hooks/exhaustive-deps
-  }, [coordString, camera, onInteract]);
+  });
+
+  useEffect(() => {
+    if (!coordString || coordString === lastPickedRef.current) return;
+    lastPickedRef.current = coordString;
+    flyTo(coordString);
+  }, [coordString]);
 
   /* ---------- Trigger 2D <-> 3D Transition ---------- */
 
@@ -534,10 +474,9 @@ function MarsScene({
 
   /* ---------- Re-fit Geometry on Canvas Resize ---------- */
 
+  // (The marker follows through the coordinate effect above, which also depends on planeDims.)
   useEffect(() => {
     updateMorphedGeometry(geometry, morphRef.current, planeDims.width, planeDims.height);
-    syncMarkerTransform(coordinate, morphRef.current, planeDims.width, planeDims.height);
-    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [geometry, planeDims.width, planeDims.height]);
 
   /* ---------- Per-Frame Unfold, Shader & Reticle Animation ---------- */
@@ -650,7 +589,6 @@ function MarsScene({
       const c = uvToCoordinate(u, v);
       const picked = coordinateTocoordinateString(c);
       lastPickedRef.current = picked;
-      setCoordinate(c);
       setCoordString(picked);
       syncMarkerTransform(c, morphRef.current, planeDims.width, planeDims.height);
     },
@@ -696,10 +634,6 @@ function MarsScene({
     onHoverCoordinate?.(null);
   }, [onHoverCoordinate]);
 
-  const handlePointerUp = useCallback(() => {
-    isDragging2DRef.current = false;
-  }, []);
-
   const handleClick = useCallback(
     (e: ThreeEvent<MouseEvent>) => {
       e.stopPropagation();
@@ -712,12 +646,12 @@ function MarsScene({
         if (Math.hypot(dx, dy) > 6) return;
       }
 
-      onInteract();
       applyUvSelection(e.uv.x, e.uv.y);
     },
-    [viewMode, isTransitioning, onInteract, applyUvSelection],
+    [viewMode, isTransitioning, applyUvSelection],
   );
 
+  // Ends a 2D drag wherever the pointer is released
   useEffect(() => {
     const stopDrag = () => {
       isDragging2DRef.current = false;
@@ -728,63 +662,60 @@ function MarsScene({
 
   return (
     <>
-      <group>
-        <mesh
-          geometry={geometry}
-          onClick={handleClick}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerLeave={handlePointerLeave}
-        >
-          <shaderMaterial
-            ref={materialRef}
-            vertexShader={vertexShader}
-            fragmentShader={fragmentShader}
-            uniforms={uniforms}
+      <mesh
+        geometry={geometry}
+        onClick={handleClick}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerLeave={handlePointerLeave}
+      >
+        <shaderMaterial
+          ref={materialRef}
+          vertexShader={vertexShader}
+          fragmentShader={fragmentShader}
+          uniforms={uniforms}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+
+      {/* Hexagonal Targeting Reticle (shared across 2D & 3D) */}
+      <group ref={markerGroupRef} visible={coordinate !== null}>
+        {/* Inner hexagonal ring (thick, slowly rotating) */}
+        <mesh ref={innerRingRef}>
+          <ringGeometry args={[0.028, 0.044, 6]} />
+          <meshBasicMaterial
+            color="#ffffff"
             side={THREE.DoubleSide}
+            transparent
+            opacity={0.9}
+            polygonOffset
+            polygonOffsetFactor={-2}
           />
         </mesh>
 
-        {/* Hexagonal Targeting Reticle (shared across 2D & 3D) */}
-        <group ref={markerGroupRef} visible={coordinate !== null}>
-          {/* Inner hexagonal ring (thick, slowly rotating) */}
-          <mesh ref={innerRingRef}>
-            <ringGeometry args={[0.028, 0.044, 6]} />
-            <meshBasicMaterial
-              color="#ffffff"
-              side={THREE.DoubleSide}
-              transparent
-              opacity={0.9}
-              polygonOffset
-              polygonOffsetFactor={-2}
-            />
-          </mesh>
+        {/* Outer hexagonal ring (thin, counter-rotating) */}
+        <mesh ref={outerRingRef} rotation={[0, 0, Math.PI / 6]}>
+          <ringGeometry args={[0.054, 0.06, 6]} />
+          <meshBasicMaterial
+            color="#ffffff"
+            side={THREE.DoubleSide}
+            transparent
+            opacity={0.55}
+            polygonOffset
+            polygonOffsetFactor={-2}
+          />
+        </mesh>
 
-          {/* Outer hexagonal ring (thin, counter-rotating) */}
-          <mesh ref={outerRingRef} rotation={[0, 0, Math.PI / 6]}>
-            <ringGeometry args={[0.054, 0.06, 6]} />
-            <meshBasicMaterial
-              color="#ffffff"
-              side={THREE.DoubleSide}
-              transparent
-              opacity={0.55}
-              polygonOffset
-              polygonOffsetFactor={-2}
-            />
-          </mesh>
-
-          {/* Centre dot */}
-          <mesh>
-            <circleGeometry args={[0.005, 12]} />
-            <meshBasicMaterial
-              color="#ffffff"
-              side={THREE.DoubleSide}
-              polygonOffset
-              polygonOffsetFactor={-2}
-            />
-          </mesh>
-        </group>
+        {/* Centre dot */}
+        <mesh>
+          <circleGeometry args={[0.005, 12]} />
+          <meshBasicMaterial
+            color="#ffffff"
+            side={THREE.DoubleSide}
+            polygonOffset
+            polygonOffsetFactor={-2}
+          />
+        </mesh>
       </group>
 
       <OrbitControls
@@ -811,7 +742,7 @@ interface GlobeMapProps {
   viewMode: '2d' | '3d';
   coordString: coordinateString | null;
   setCoordString: (coordStr: coordinateString | null) => void;
-  activeOverlay: string;
+  overlayPixels: Uint8Array | null;
   overlayOpacity: number;
   onHoverCoordinate?: (coordStr: coordinateString | null) => void;
 }
@@ -820,7 +751,7 @@ export default function GlobeMap({
   viewMode,
   coordString,
   setCoordString,
-  activeOverlay,
+  overlayPixels,
   overlayOpacity,
   onHoverCoordinate,
 }: GlobeMapProps) {
@@ -831,11 +762,7 @@ export default function GlobeMap({
   }, []);
 
   return (
-    <div
-      className={`GlobeMap mode-${viewMode}`}
-      style={{ backgroundColor: 'var(--color-bg)' }}
-      onPointerDown={handleInteract}
-    >
+    <div className={`GlobeMap mode-${viewMode}`} onPointerDown={handleInteract}>
       <Canvas
         camera={{ position: [0, 0.2, CAMERA_Z], fov: CAMERA_FOV }}
         gl={{ antialias: true, alpha: true }}
@@ -843,14 +770,13 @@ export default function GlobeMap({
           scene.background = null;
           gl.setClearColor(0x000000, 0);
         }}
-        onPointerDown={handleInteract}
       >
         <Suspense fallback={null}>
           <MarsScene
             viewMode={viewMode}
             coordString={coordString}
             setCoordString={setCoordString}
-            activeOverlay={activeOverlay}
+            overlayPixels={overlayPixels}
             overlayOpacity={overlayOpacity}
             autoRotate={autoRotate}
             onInteract={handleInteract}

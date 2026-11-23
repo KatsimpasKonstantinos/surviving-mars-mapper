@@ -1,0 +1,29 @@
+@layer components {
+  .ScoreBar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    block-size: 100%;
+    min-block-size: 1.6em;
+    font-variant-numeric: tabular-nums;
+
+    .score-bar-fill {
+      position: absolute;
+      inset-inline-start: 0;
+      inset-block: 20%;
+      border-radius: 3px;
+      background: color-mix(in srgb, var(--color-secondary) 35%, transparent);
+    }
+
+    /* Stays readable on the bar, also in a highlighted (blue) cell */
+    > span:last-child {
+      position: relative;
+      padding-inline-start: 4px;
+      color: var(--color-text);
+    }
+  }
+
+  .score-empty {
+    color: var(--color-text-secondary);
+  }
+}

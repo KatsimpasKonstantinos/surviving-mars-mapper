@@ -21,6 +21,15 @@ export interface MapDataEntry {
   ConcreteBars: number;
   WaterBars: number;
 
+  /** Raw 0–255 values behind the bars (finer than the 1–4 bars) */
+  Metals: number;
+  Concrete: number;
+  Water: number;
+  DustDevils: number;
+  DustStorm: number;
+  Meteor: number;
+  ColdWave: number;
+
   MapTemplateID: string;
 
   xxhashShuffleBreakThroughTech: string;

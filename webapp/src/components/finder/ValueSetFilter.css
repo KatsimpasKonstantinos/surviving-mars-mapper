@@ -23,13 +23,6 @@
       }
     }
 
-    .vsf-mode {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      color: var(--color-text-secondary);
-    }
-
     label {
       display: flex;
       align-items: center;
@@ -37,9 +30,24 @@
       cursor: pointer;
     }
 
-    input:is([type='checkbox'], [type='radio']) {
+    input[type='checkbox'] {
       margin: 0;
       accent-color: var(--color-secondary);
+    }
+
+    /* Breakthrough filter: "Get by choice" control and hint */
+    .vsf-depth {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px 8px;
+      color: var(--color-text-secondary);
+
+      small {
+        flex-basis: 100%;
+        font-size: 0.8rem;
+      }
     }
 
     .vsf-list {
@@ -58,6 +66,14 @@
         &:hover {
           background: color-mix(in srgb, var(--color-secondary) 15%, transparent);
         }
+
+        &.disabled {
+          opacity: 0.45;
+
+          label {
+            cursor: default;
+          }
+        }
       }
 
       img {
@@ -70,25 +86,6 @@
 
     .vsf-empty {
       color: var(--color-text-secondary);
-    }
-
-    .vsf-meter {
-      display: inline-flex;
-      gap: 3px;
-      padding-inline-start: 4px;
-
-      i {
-        inline-size: 14px;
-        block-size: 14px;
-        border: 1px solid var(--color-text-secondary);
-        border-radius: 2px;
-        transform: skewX(-30deg);
-
-        &.filled {
-          background: var(--color-accent);
-          border-color: var(--color-accent);
-        }
-      }
     }
 
     .vsf-footer {

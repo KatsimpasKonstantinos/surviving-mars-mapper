@@ -1,4 +1,4 @@
-// 1. The 64-bit PRNG Math Engine
+// The game's random number generator (splitmix64-style), in exact 64-bit BigInt maths.
 export function BraidRandom(seed: bigint): bigint {
   const MAGIC_1 = 0x9e3779b97f4a7c15n;
   const MAGIC_2 = 0xbf58476d1ce4e5b9n;

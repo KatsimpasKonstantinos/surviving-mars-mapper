@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  webapp:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: webapp
+    steps:
+      - uses: actions/checkout@v4
+
+      # Uses the pnpm version from "packageManager" in package.json
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: webapp/package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: webapp/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Format, lint and type check
+        run: pnpm exec vp check
+
+      - name: Unit tests
+        run: pnpm exec vp test
+
+      - name: Build
+        run: pnpm run build

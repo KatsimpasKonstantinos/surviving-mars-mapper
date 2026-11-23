@@ -1,23 +1,21 @@
 import { useEffect, useState } from 'react';
 import type { MapData } from '../types';
-import { loadMarsData, onMarsDataProgress } from '../data/marsData';
+import { loadMarsData, useMarsDataProgress } from '../data/marsData';
 
-export interface MarsDataState {
+interface MarsDataState {
   data: MapData | null;
+  /** Download progress, 0–100 */
   progress: number;
   error: string | null;
 }
 
 export function useMarsData(): MarsDataState {
   const [data, setData] = useState<MapData | null>(null);
-  const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const progress = useMarsDataProgress();
 
   useEffect(() => {
     let active = true;
-    const unsubscribe = onMarsDataProgress((p) => {
-      if (active) setProgress(p);
-    });
     loadMarsData()
       .then((d) => {
         if (active) setData(d);
@@ -28,7 +26,6 @@ export function useMarsData(): MarsDataState {
       });
     return () => {
       active = false;
-      unsubscribe();
     };
   }, []);
 

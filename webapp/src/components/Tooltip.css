@@ -1,13 +1,19 @@
 @layer components {
   .tooltip-anchor {
     display: contents;
+
+    /* Long press shows the tooltip instead of the iOS image/link callout */
+    > * {
+      -webkit-touch-callout: none;
+    }
   }
 
   .tooltip {
     position: fixed;
     inset-block-start: 0;
     inset-inline-start: 0;
-    z-index: 1000;
+    /* Above everything, including AG Grid popups (filter menus) */
+    z-index: 100000;
     /* Hidden until Tooltip has measured and placed it */
     visibility: hidden;
     max-inline-size: min(320px, calc(100vw - 16px));

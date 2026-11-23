@@ -4,11 +4,18 @@ import DarkModeToggle from './DarkModeToggle';
 import DownloadPopup from './DownloadPopup';
 import type { coordinateString } from '../types';
 import { coordinateSearch } from '../hooks/useUrlSync';
+import { useCompareSites } from '../data/compare';
+import { readStorage, writeStorage } from '../data/store';
+import { useDismiss } from '../hooks/useDismiss';
 import './Navbar.css';
+
+/** Also read by the inline script in index.html, to apply the theme before first paint */
+const THEME_KEY = 'theme';
 
 const NAV_ITEMS = [
   { path: '/', label: 'Map' },
   { path: '/finder', label: 'Finder' },
+  { path: '/compare', label: 'Compare' },
   { path: '/breakthrough', label: 'Breakthrough' },
   { path: '/faq', label: 'FAQ' },
 ];
@@ -20,55 +27,26 @@ interface NavbarProps {
 function Navbar({ coordString }: NavbarProps) {
   // Links carry the selected site along, so switching pages keeps it in the URL.
   const search = coordinateSearch(coordString);
-  const [isLightMode, setIsLightMode] = useState(() => {
-    return localStorage.getItem('theme') === 'light';
-  });
+  const compareCount = useCompareSites().length;
+  const [isLightMode, setIsLightMode] = useState(() => readStorage(THEME_KEY) === 'light');
 
   const [downloadPopupVisible, setDownloadPopupVisible] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement | null>(null);
-  // 1. Create a new ref for the entire navbar
   const navRef = useRef<HTMLElement | null>(null);
+  useDismiss(dropdownRef, downloadPopupVisible, () => setDownloadPopupVisible(false));
+  useDismiss(navRef, isMobileMenuOpen, () => setIsMobileMenuOpen(false));
 
   useEffect(() => {
     document.documentElement.classList.toggle('light', isLightMode);
-    localStorage.setItem('theme', isLightMode ? 'light' : 'dark');
+    writeStorage(THEME_KEY, isLightMode ? 'light' : 'dark');
   }, [isLightMode]);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      // Close the download popup if clicking outside of it
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setDownloadPopupVisible(false);
-      }
-
-      // 2. Close the mobile menu if clicking outside the entire navbar
-      if (navRef.current && !navRef.current.contains(event.target as Node)) {
-        setIsMobileMenuOpen(false);
-      }
-    };
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setDownloadPopupVisible(false);
-        setIsMobileMenuOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEscape);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, []);
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
   return (
     <header className="navbar-wrapper">
-      {/* 3. Attach the ref to the nav element */}
       <nav className="navbar" ref={navRef}>
         <div className="navbar-header">
           <Link to={{ pathname: '/', search }} className="navbar-logo" onClick={closeMobileMenu}>
@@ -98,6 +76,11 @@ function Navbar({ coordString }: NavbarProps) {
               onClick={closeMobileMenu}
             >
               {label}
+              {path === '/compare' && compareCount > 0 && (
+                <span className="nav-badge" aria-label={`${compareCount} pinned`}>
+                  {compareCount}
+                </span>
+              )}
             </NavLink>
           ))}
 
